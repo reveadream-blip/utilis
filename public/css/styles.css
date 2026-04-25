@@ -240,3 +240,131 @@ a:hover {
     transform: translateY(0);
   }
 }
+
+.status--tight {
+  margin-bottom: 12px;
+}
+
+.legal-note {
+  margin: 12px 0 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.urg-hint {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.urgence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.tel-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.btn-tel {
+  background: var(--danger);
+  color: #fff;
+  min-height: 48px;
+  width: 100%;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.tel-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.3;
+  text-align: center;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.card-head h2 {
+  margin: 0;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid rgba(45, 157, 120, 0.45);
+  padding: 8px 12px;
+  min-height: auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.btn-ghost:hover {
+  background: rgba(45, 157, 120, 0.12);
+}
+
+.poi-list--rich {
+  margin-top: 8px;
+}
+
+.poi-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.poi-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.poi-item-main strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.poi-km {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.poi-link {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(45, 157, 120, 0.2);
+  color: #9ee4c9;
+  text-decoration: none;
+}
+
+.poi-link:hover {
+  background: rgba(45, 157, 120, 0.35);
+  text-decoration: none;
+}
+
+.poi-empty {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: center;
+  list-style: none;
+}

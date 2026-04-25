@@ -33,29 +33,28 @@
     </header>
 
     <section class="card" id="section-urgence" aria-label="Urgence">
-      <h2>Urgence (UE / compatible)</h2>
-      <p class="status">
-        Le <strong>112</strong> est le numéro d’appel d’urgence unifié dans
-        toute l’UE. Ailleurs, adaptez selon le pays (déploiement futur).
+      <h2>Urgence</h2>
+      <p class="status status--tight" id="urgence-country">
+        Localisation requise pour adapter les numéros au pays détecté.
       </p>
-      <div class="urgence-row">
-        <button type="button" class="btn btn-danger" id="call-112" title="Appeler le 112">
-          Appeler le 112
-        </button>
-      </div>
+      <div id="urgence-buttons" class="urgence-grid" role="group" aria-label="Numéros d’urgence"></div>
+      <p class="status urg-hint hidden" id="urgence-hint"></p>
+      <p class="legal-note">
+        Numéros à titre indicatif — en cas de doute, vérifiez auprès des autorités du pays. Ne remplace pas les consignes des services de secours.
+      </p>
     </section>
 
     <section class="card" id="section-geo" aria-label="Géolocalisation">
       <h2>Autour de moi</h2>
       <p class="status" id="geo-status">
-        Activez la <strong>localisation</strong> pour afficher les services
-        proches (bientôt : hôpitaux, commissariats, sapeurs-pompiers, etc.).
+        Activez la <strong>localisation</strong> pour détecter le pays, afficher les
+        numéros utiles et les hôpitaux cartographiés à proximité (OpenStreetMap).
       </p>
       <div class="geo-dots" aria-hidden="true" id="geo-dots">
         <span></span><span></span><span></span>
       </div>
       <p id="geo-coords" class="status hidden">
-        Coordonnées (à titre indicatif) : <strong>—</strong>
+        Coordonnées (approx.) : <strong>—</strong>
       </p>
       <button type="button" class="btn btn-primary" id="btn-geo">
         Autoriser la localisation
@@ -64,25 +63,26 @@
 
     <section
       class="card hidden"
-      id="poi-placeholder"
-      aria-label="Exemples de fiches (à connecter)"
+      id="section-hospitals"
+      aria-label="Hôpitaux à proximité"
     >
-      <h2>Exemples (prochaine étape)</h2>
-      <ul class="poi-list">
-        <li>Hôpital le plus proche <span>carte + itinéraire</span></li>
-        <li>Police / gendarmerie <span>—</span></li>
-        <li>Pompiers <span>—</span></li>
-        <li>Pharmacies de garde <span>—</span></li>
-      </ul>
+      <div class="card-head">
+        <h2>Hôpitaux à proximité</h2>
+        <button type="button" class="btn btn-ghost" id="btn-refresh-hospitals" title="Recharger la liste">
+          Actualiser
+        </button>
+      </div>
+      <p class="status status--tight" id="hospitals-status"></p>
+      <ul class="poi-list poi-list--rich" id="hospitals-list"></ul>
     </section>
 
     <p class="footer-note">
-      Application web installable : depuis Chrome ou Edge sur Android, menu
-      «&nbsp;Installer l’application&nbsp;» pour un accès comme une appli
-      classique. Les données d’urgence seront vérifiées par source (version
-      ultérieure).
+      Données cartographiques : contributeurs
+      <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a>.
+      Géolocalisation du pays : service tiers (BigDataCloud). Installez l’app via le menu du navigateur pour un accès rapide.
     </p>
 
+    <script src="js/emergency-data.js" defer></script>
     <script src="js/app.js" defer></script>
   </body>
 </html>
