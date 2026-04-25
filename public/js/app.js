@@ -1026,7 +1026,7 @@
       if (countryName && countryCode) {
         el.urgenceCountry.textContent =
           countryName +
-          (countryDialCode ? " - Indicatif pays: " + countryDialCode : "");
+          (countryDialCode ? " - Indicatif tél: " + countryDialCode : "");
       } else if (lastPos && !countryCode) {
         el.urgenceCountry.textContent =
           "Pays non identifié automatiquement — numéros génériques ci-dessous.";
@@ -1254,7 +1254,7 @@
           el.simCountryInfo.textContent =
             "Test hors ligne actif : " +
             normalizeCountryDisplayName(p.name) +
-            (p.dialCode ? " - Indicatif pays: " + p.dialCode : "");
+            (p.dialCode ? " - Indicatif tél: " + p.dialCode : "");
         }
         showToast("Simulation active : " + normalizeCountryDisplayName(p.name) + ".");
       })
