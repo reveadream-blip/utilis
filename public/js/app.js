@@ -1024,8 +1024,9 @@
     if (!el.urgenceButtons || !window.InfosEmergency) return;
     if (el.urgenceCountry) {
       if (countryName && countryCode) {
+        var countryLabelUpper = String(countryName).toUpperCase();
         el.urgenceCountry.textContent =
-          countryName +
+          countryLabelUpper +
           " - Indicatif pays: " + countryCode +
           (countryDialCode ? " - Indicatif tél: " + countryDialCode : "");
       } else if (lastPos && !countryCode) {
@@ -1252,9 +1253,10 @@
         loadNearbyData(lastPos, true);
         if (el.simCountryInfo) {
           el.simCountryInfo.classList.remove("hidden");
+          var simCountryUpper = String(normalizeCountryDisplayName(p.name)).toUpperCase();
           el.simCountryInfo.textContent =
             "Test hors ligne actif : " +
-            normalizeCountryDisplayName(p.name) +
+            simCountryUpper +
             " - Indicatif pays: " + p.code +
             (p.dialCode ? " - Indicatif tél: " + p.dialCode : "");
         }
