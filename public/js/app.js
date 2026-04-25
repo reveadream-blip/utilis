@@ -530,12 +530,25 @@
     return m[amenity] || "Lieu";
   }
 
+  function hasThaiChars(text) {
+    return /[\u0E00-\u0E7F]/.test(String(text || ""));
+  }
+
+  function pickDisplayNameFromTags(tags) {
+    if (!tags) return null;
+    var preferred = tags["name:fr"] || tags["name:en"] || tags.int_name || tags["name:latin"];
+    var local = tags.name || tags["official_name"] || tags["alt_name"];
+    if (preferred && local && hasThaiChars(local) && !hasThaiChars(preferred)) {
+      return preferred + " (" + local + ")";
+    }
+    return preferred || local || null;
+  }
+
   function rowNameFromEl(e) {
     var t = e.tags || {};
     var tagKey = t.amenity || (t.emergency === "defibrillator" ? "defibrillator" : t.emergency);
     return (
-      t.name ||
-      t["name:fr"] ||
+      pickDisplayNameFromTags(t) ||
       t["operator"] ||
       t["brand"] ||
       defaultName(tagKey)
