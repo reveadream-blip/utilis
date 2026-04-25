@@ -43,6 +43,7 @@
     el.urgenceHint = $("urgence-hint");
     el.urgenceCountry = $("urgence-country");
     el.simCountryIso = $("sim-country-iso");
+    el.simCountryInfo = $("sim-country-info");
     el.btnCountrySim = $("btn-country-sim");
     el.btnCountrySimReset = $("btn-country-sim-reset");
     el.sectionFrListen = $("section-fr-listen");
@@ -1174,6 +1175,10 @@
           lat: Number(row.latlng[0]),
           lon: Number(row.latlng[1]),
           code: (row.cca2 || iso || "").toUpperCase(),
+          dialCode:
+            row.idd && row.idd.root
+              ? row.idd.root + ((row.idd.suffixes && row.idd.suffixes[0]) || "")
+              : null,
           name:
             (row.translations &&
               row.translations.fra &&
@@ -1207,6 +1212,16 @@
         clearAllPlaceLists();
         renderEmergency();
         loadNearbyData(lastPos, true);
+        if (el.simCountryInfo) {
+          el.simCountryInfo.classList.remove("hidden");
+          el.simCountryInfo.textContent =
+            "Test hors ligne actif : " +
+            p.name +
+            " (" +
+            p.code +
+            ")" +
+            (p.dialCode ? " - Indicatif: " + p.dialCode : "");
+        }
         showToast("Simulation active : " + p.name + " (" + p.code + ").");
       })
       .catch(function () {
@@ -1217,6 +1232,10 @@
   function resetSimulatedCountryMode() {
     countryResolveMode = "geo";
     countrySource = null;
+    if (el.simCountryInfo) {
+      el.simCountryInfo.classList.add("hidden");
+      el.simCountryInfo.textContent = "";
+    }
     showToast("Retour au mode GPS.");
     startGeolocation();
   }
