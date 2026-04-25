@@ -17,6 +17,7 @@
   var activeProfileSlot = "self";
   var countryCode = null;
   var countryName = null;
+  var countryDialCode = null;
   var countrySource = null;
   var countryResolveMode = "geo";
   var nearbyLoaded = false;
@@ -26,6 +27,7 @@
   var EAGER = ["h", "fire", "pol", "ph"];
   var LAZY = ["med", "ve", "def", "emb"];
   var TAB_ORDER = ["h", "fire", "pol", "ph", "med", "ve", "def", "emb"];
+  var dialCodeCache = {};
 
   function $(id) {
     return document.getElementById(id);
@@ -459,6 +461,7 @@
   function activateFallbackMode(reason) {
     countryCode = null;
     countryName = null;
+    countryDialCode = null;
     countrySource = null;
     renderEmergency();
     refreshSosOverlay();
@@ -1015,9 +1018,9 @@
     if (!el.urgenceButtons || !window.InfosEmergency) return;
     if (el.urgenceCountry) {
       if (countryName && countryCode) {
-        var src = countrySource === "sim" ? "simulation" : "GPS";
         el.urgenceCountry.textContent =
-          countryName + " — source " + src + ".";
+          countryName +
+          (countryDialCode ? " - Indicatif: " + countryDialCode : "");
       } else if (lastPos && !countryCode) {
         el.urgenceCountry.textContent =
           "Pays non identifié automatiquement — numéros génériques ci-dessous.";
@@ -1157,6 +1160,33 @@
     });
   }
 
+  function fetchDialCodeByCountryCode(code) {
+    var c = String(code || "").toUpperCase();
+    if (!c) return Promise.resolve(null);
+    if (dialCodeCache[c] !== undefined) return Promise.resolve(dialCodeCache[c]);
+    return fetch("https://restcountries.com/v3.1/alpha/" + encodeURIComponent(c), {
+      method: "GET",
+      cache: "no-store",
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("Pays inconnu");
+        return r.json();
+      })
+      .then(function (arr) {
+        var row = Array.isArray(arr) ? arr[0] : arr;
+        var dial =
+          row && row.idd && row.idd.root
+            ? row.idd.root + ((row.idd.suffixes && row.idd.suffixes[0]) || "")
+            : null;
+        dialCodeCache[c] = dial;
+        return dial;
+      })
+      .catch(function () {
+        dialCodeCache[c] = null;
+        return null;
+      });
+  }
+
   function detectCountryCenterByIso(iso) {
     return fetch("https://restcountries.com/v3.1/alpha/" + encodeURIComponent(iso), {
       method: "GET",
@@ -1200,6 +1230,7 @@
       .then(function (p) {
         countryCode = p.code;
         countryName = p.name;
+        countryDialCode = p.dialCode || null;
         countrySource = "sim";
         lastPos = { coords: { latitude: p.lat, longitude: p.lon } };
         clearFallbackMode();
@@ -1289,11 +1320,20 @@
     reverseGeocode(lat, lon)
       .then(function (data) {
         if (countryResolveMode !== "geo") return;
-        countryCode = data.countryCode || null;
+        var nextCode = data.countryCode || null;
+        countryCode = nextCode;
         countryName = data.countryName || data.principalSubdivision || null;
+        countryDialCode = null;
         countrySource = countryCode ? "geo" : null;
         clearFallbackMode();
         renderEmergency();
+        if (nextCode) {
+          fetchDialCodeByCountryCode(nextCode).then(function (dial) {
+            if (countryCode !== nextCode) return;
+            countryDialCode = dial;
+            renderEmergency();
+          });
+        }
       })
       .catch(function () {
         activateFallbackMode("Pays non détecté : mode de secours activé avec numéros génériques.");
