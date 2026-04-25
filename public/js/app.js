@@ -10,6 +10,7 @@
   var el = {};
   var watchId = null;
   var lastPos = null;
+  var deferredInstallPrompt = null;
   var activeProfileSlot = "self";
   var countryCode = null;
   var countryName = null;
@@ -34,6 +35,7 @@
     el.placesCard = $("section-places");
     el.placesStatus = $("places-status");
     el.btnRefreshPlaces = $("btn-refresh-places");
+    el.btnInstallApp = $("btn-install-app");
     el.urgenceButtons = $("urgence-buttons");
     el.urgenceHint = $("urgence-hint");
     el.urgenceCountry = $("urgence-country");
@@ -224,6 +226,65 @@
     setTimeout(function () {
       t.remove();
     }, 5000);
+  }
+
+  function isStandaloneApp() {
+    return (
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone === true
+    );
+  }
+
+  function isIosDevice() {
+    return /iphone|ipad|ipod/i.test(window.navigator.userAgent || "");
+  }
+
+  function toggleInstallButton(show) {
+    if (!el.btnInstallApp) return;
+    el.btnInstallApp.classList.toggle("hidden", !show);
+  }
+
+  function promptInstallApp() {
+    if (isStandaloneApp()) {
+      toggleInstallButton(false);
+      showToast("L'application est déjà installée.");
+      return;
+    }
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice
+        .then(function () {
+          deferredInstallPrompt = null;
+          toggleInstallButton(false);
+        })
+        .catch(function () {});
+      return;
+    }
+    if (isIosDevice()) {
+      showToast(
+        "Sur iPhone : touchez Partager puis « Sur l'écran d'accueil » pour installer l'application."
+      );
+      return;
+    }
+    showToast(
+      "Installation indisponible pour le moment. Réessayez après quelques secondes sur HTTPS.",
+      true
+    );
+  }
+
+  function setupInstallPrompt() {
+    if (!el.btnInstallApp) return;
+    toggleInstallButton(!isStandaloneApp() && isIosDevice());
+    window.addEventListener("beforeinstallprompt", function (evt) {
+      evt.preventDefault();
+      deferredInstallPrompt = evt;
+      if (!isStandaloneApp()) toggleInstallButton(true);
+    });
+    window.addEventListener("appinstalled", function () {
+      deferredInstallPrompt = null;
+      toggleInstallButton(false);
+      showToast("Application installée.");
+    });
   }
 
   function formatPos(pos) {
@@ -1469,6 +1530,7 @@
 
   function init() {
     initEls();
+    setupInstallPrompt();
     loadProfile();
     renderShortcuts();
     renderFavorites();
@@ -1491,6 +1553,9 @@
     }
     if (el.btnAddShortcut) {
       el.btnAddShortcut.addEventListener("click", addShortcut);
+    }
+    if (el.btnInstallApp) {
+      el.btnInstallApp.addEventListener("click", promptInstallApp);
     }
     if (el.profileSlot) {
       el.profileSlot.addEventListener("change", onProfileSlotChange);
