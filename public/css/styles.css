@@ -688,7 +688,8 @@ a:hover {
 }
 
 .form-field input,
-.form-field textarea {
+.form-field textarea,
+.form-field select {
   font: inherit;
   font-size: 0.95rem;
   font-weight: 400;
@@ -702,6 +703,10 @@ a:hover {
 .form-field textarea {
   resize: vertical;
   min-height: 64px;
+}
+
+.profile-slot {
+  margin-bottom: 2px;
 }
 
 .form-actions {

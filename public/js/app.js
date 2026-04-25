@@ -10,6 +10,7 @@
   var el = {};
   var watchId = null;
   var lastPos = null;
+  var activeProfileSlot = "self";
   var countryCode = null;
   var countryName = null;
   var nearbyLoaded = false;
@@ -42,6 +43,7 @@
     el.tabBtns = document.querySelectorAll("[data-tab]");
     el.tabPanels = document.querySelectorAll("[data-tabpanel]");
     el.formProfile = $("form-profile");
+    el.profileSlot = $("profile-slot");
     el.btnSaveProfile = $("btn-save-profile");
     el.btnCopyProfile = $("btn-copy-profile");
     el.btnExportProfile = $("btn-export-profile");
@@ -55,6 +57,7 @@
     el.sosTelWarn = $("sos-tel-warn");
     el.btnEmergencyShare = $("btn-emergency-share");
     el.btnEmergencyFiche = $("btn-emergency-fiche");
+    el.btnEmergencySafe = $("btn-emergency-safe");
     el.favoritesBox = $("favorites-box");
     el.favoritesList = $("favorites-list");
   }
@@ -1061,6 +1064,37 @@
     }
   }
 
+  function profileSlotLabel(slot) {
+    if (slot === "child") return "Enfant";
+    if (slot === "senior") return "Parent / senior";
+    return "Moi";
+  }
+
+  function getProfilesData() {
+    var empty = {
+      active: "self",
+      profiles: { self: {}, child: {}, senior: {} },
+    };
+    try {
+      var s = localStorage.getItem(STORAGE_PROFILE);
+      if (!s) return empty;
+      var o = JSON.parse(s);
+      if (o && o.profiles) {
+        o.active = o.active || "self";
+        o.profiles.self = o.profiles.self || {};
+        o.profiles.child = o.profiles.child || {};
+        o.profiles.senior = o.profiles.senior || {};
+        return o;
+      }
+      if (o && typeof o === "object") {
+        empty.profiles.self = o;
+      }
+      return empty;
+    } catch (e) {
+      return empty;
+    }
+  }
+
   function saveProfile() {
     if (!el.formProfile) return;
     var fd = new FormData(el.formProfile);
@@ -1074,33 +1108,48 @@
       notes: (fd.get("notes") || "").toString().trim(),
     };
     try {
-      localStorage.setItem(STORAGE_PROFILE, JSON.stringify(o));
-      showToast("Fiche enregistrée sur cet appareil.");
+      var data = getProfilesData();
+      data.active = activeProfileSlot;
+      data.profiles[activeProfileSlot] = o;
+      localStorage.setItem(STORAGE_PROFILE, JSON.stringify(data));
+      showToast("Fiche enregistrée pour le profil actif.");
     } catch (e) {
       showToast("Stockage indisponible (navigateur privé ?).", true);
     }
   }
 
   function loadProfile() {
+    if (!el.formProfile) return;
+    var data = getProfilesData();
+    activeProfileSlot = data.active || "self";
+    if (el.profileSlot) el.profileSlot.value = activeProfileSlot;
+    var o = data.profiles[activeProfileSlot] || {};
+    ["name", "blood", "allergies", "meds", "contact", "contactPhone", "notes"].forEach(
+      function (f) {
+        var inp = el.formProfile.elements.namedItem(f);
+        if (inp) inp.value = o[f] || "";
+      }
+    );
+  }
+
+  function onProfileSlotChange() {
+    if (!el.profileSlot) return;
+    activeProfileSlot = el.profileSlot.value || "self";
+    var data = getProfilesData();
+    data.active = activeProfileSlot;
     try {
-      var s = localStorage.getItem(STORAGE_PROFILE);
-      if (!s || !el.formProfile) return;
-      var o = JSON.parse(s);
-      ["name", "blood", "allergies", "meds", "contact", "contactPhone", "notes"].forEach(
-        function (f) {
-          var inp = el.formProfile.elements.namedItem(f);
-          if (inp && o[f]) inp.value = o[f];
-        }
-      );
+      localStorage.setItem(STORAGE_PROFILE, JSON.stringify(data));
     } catch (e) {}
+    loadProfile();
   }
 
   function copyProfileSummary() {
     try {
-      var s = localStorage.getItem(STORAGE_PROFILE);
-      var o = s ? JSON.parse(s) : {};
+      var data = getProfilesData();
+      var o = data.profiles[activeProfileSlot] || {};
       var lines = [
         "— Fiche urgence (Infos Indispensables) —",
+        "Profil: " + profileSlotLabel(activeProfileSlot),
         "Identité: " + (o.name || "—"),
         "Groupe sanguin: " + (o.blood || "—"),
         "Allergies: " + (o.allergies || "—"),
@@ -1128,13 +1177,14 @@
 
   function exportProfilePdf() {
     try {
-      var s = localStorage.getItem(STORAGE_PROFILE);
-      var o = s ? JSON.parse(s) : {};
+      var data = getProfilesData();
+      var o = data.profiles[activeProfileSlot] || {};
       var html =
         "<!doctype html><html><head><meta charset='utf-8'><title>Fiche urgence</title>" +
         "<style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin:0 0 12px}p{margin:6px 0}strong{display:inline-block;min-width:180px}</style>" +
         "</head><body>" +
         "<h1>Fiche urgence - Infos Indispensables</h1>" +
+        "<p><strong>Profil :</strong> " + profileSlotLabel(activeProfileSlot) + "</p>" +
         "<p><strong>Identité :</strong> " + (o.name || "-") + "</p>" +
         "<p><strong>Groupe sanguin :</strong> " + (o.blood || "-") + "</p>" +
         "<p><strong>Allergies :</strong> " + (o.allergies || "-") + "</p>" +
@@ -1160,6 +1210,54 @@
     } catch (e) {
       showToast("Export PDF impossible.", true);
     }
+  }
+
+  function sendSafetyMessage() {
+    var data = getProfilesData();
+    var p = data.profiles[activeProfileSlot] || {};
+    var phone = (p.contactPhone || "").replace(/\s+/g, "");
+    var who = p.name || profileSlotLabel(activeProfileSlot);
+    var msg =
+      "Je suis en securite (" +
+      who +
+      ") - " +
+      new Date().toLocaleString("fr-FR");
+    if (lastPos && lastPos.coords) {
+      msg +=
+        "\nPosition: " +
+        lastPos.coords.latitude.toFixed(5) +
+        ", " +
+        lastPos.coords.longitude.toFixed(5) +
+        "\nhttps://www.google.com/maps?q=" +
+        lastPos.coords.latitude +
+        "," +
+        lastPos.coords.longitude;
+    }
+    if (phone) {
+      var smsUrl = "sms:" + encodeURIComponent(phone) + "?body=" + encodeURIComponent(msg);
+      if (
+        window.confirm(
+          "Un message va etre prepare pour le contact d'urgence (" +
+            phone +
+            "). Continuer ?"
+        )
+      ) {
+        window.location.href = smsUrl;
+        return;
+      }
+    }
+    if (navigator.share) {
+      navigator
+        .share({ title: "Je suis en securite", text: msg })
+        .then(function () {
+          showToast("Message de securite partage.");
+        })
+        .catch(function () {
+          copyTextFallback(msg);
+        });
+      return;
+    }
+    copyTextFallback(msg);
   }
 
   function getShortcuts() {
@@ -1255,6 +1353,9 @@
     if (el.btnAddShortcut) {
       el.btnAddShortcut.addEventListener("click", addShortcut);
     }
+    if (el.profileSlot) {
+      el.profileSlot.addEventListener("change", onProfileSlotChange);
+    }
 
     if (el.btnOpenEmergency) {
       el.btnOpenEmergency.addEventListener("click", openEmergencyMode);
@@ -1271,6 +1372,9 @@
         var s = $("section-profile");
         if (s) s.scrollIntoView({ behavior: "smooth", block: "start" });
       });
+    }
+    if (el.btnEmergencySafe) {
+      el.btnEmergencySafe.addEventListener("click", sendSafetyMessage);
     }
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && el.emergencyMode && !el.emergencyMode.classList.contains("hidden")) {

@@ -85,6 +85,11 @@
             Ouvrir ma fiche d’urgence
           </button>
         </div>
+        <div class="emergency-mode__row">
+          <button type="button" class="btn btn-emg-secondary" id="btn-emergency-safe">
+            Je suis en sécurité
+          </button>
+        </div>
         <button type="button" class="btn btn-emg-close" id="btn-close-emergency">
           Fermer
         </button>
@@ -211,6 +216,14 @@
 
     <section class="card" id="section-profile" aria-label="Fiche d'urgence">
       <h2>Ma fiche d’urgence</h2>
+      <label class="form-field form-field--wide profile-slot">
+        Profil actif
+        <select id="profile-slot" name="profileSlot">
+          <option value="self">Moi</option>
+          <option value="child">Enfant</option>
+          <option value="senior">Parent / senior</option>
+        </select>
+      </label>
       <p class="status status--tight">
         Renseignements stockés <strong>uniquement sur cet appareil</strong> (navigateur). À montrer en cas d’accident / malaise ; vous pouvez copier le résumé.
       </p>
