@@ -855,6 +855,10 @@ a:hover {
   min-width: 110px;
 }
 
+.sim-country-label {
+  white-space: nowrap;
+}
+
 .sim-country-field input {
   text-transform: uppercase;
 }
