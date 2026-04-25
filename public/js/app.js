@@ -893,7 +893,7 @@
     }
   }
 
-  function reverseGeocode(lat, lon) {
+  function reverseGeocodePrimary(lat, lon) {
     return fetch(
       "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" +
         encodeURIComponent(lat) +
@@ -904,6 +904,36 @@
     ).then(function (r) {
       if (!r.ok) throw new Error("Géocodage indisponible");
       return r.json();
+    });
+  }
+
+  function reverseGeocodeFallback(lat, lon) {
+    return fetch(
+      "https://nominatim.openstreetmap.org/reverse?lat=" +
+        encodeURIComponent(lat) +
+        "&lon=" +
+        encodeURIComponent(lon) +
+        "&format=jsonv2&accept-language=fr",
+      { method: "GET", cache: "no-store" }
+    )
+      .then(function (r) {
+        if (!r.ok) throw new Error("Nominatim indisponible");
+        return r.json();
+      })
+      .then(function (d) {
+        var cc = d && d.address && d.address.country_code
+          ? String(d.address.country_code).toUpperCase()
+          : null;
+        return {
+          countryCode: cc,
+          countryName: d && d.address ? d.address.country : null,
+        };
+      });
+  }
+
+  function reverseGeocode(lat, lon) {
+    return reverseGeocodePrimary(lat, lon).catch(function () {
+      return reverseGeocodeFallback(lat, lon);
     });
   }
 
@@ -1015,7 +1045,10 @@
       return;
     }
     setStatus("Recherche de la position…");
-    if (el.btnGeo) el.btnGeo.disabled = true;
+    if (el.btnGeo) {
+      el.btnGeo.disabled = true;
+      el.btnGeo.textContent = "Localisation en cours…";
+    }
     nearbyLoaded = false;
     resetTabState();
     clearAllPlaceLists();
@@ -1446,6 +1479,9 @@
 
     renderEmergency();
     setActiveTab("h");
+    if (!lastPos) {
+      startGeolocation();
+    }
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () {
