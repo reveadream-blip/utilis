@@ -1017,7 +1017,7 @@
       if (countryName && countryCode) {
         var src = countrySource === "sim" ? "simulation" : "GPS";
         el.urgenceCountry.textContent =
-          countryName + " (" + countryCode + ") — source " + src + ".";
+          countryName + " — source " + src + ".";
       } else if (lastPos && !countryCode) {
         el.urgenceCountry.textContent =
           "Pays non identifié automatiquement — numéros génériques ci-dessous.";
@@ -1217,12 +1217,9 @@
           el.simCountryInfo.textContent =
             "Test hors ligne actif : " +
             p.name +
-            " (" +
-            p.code +
-            ")" +
             (p.dialCode ? " - Indicatif: " + p.dialCode : "");
         }
-        showToast("Simulation active : " + p.name + " (" + p.code + ").");
+        showToast("Simulation active : " + p.name + ".");
       })
       .catch(function () {
         showToast("Impossible de simuler ce pays. Vérifiez le code ISO.", true);
