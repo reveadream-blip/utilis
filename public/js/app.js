@@ -11,6 +11,7 @@
   var watchId = null;
   var lastPos = null;
   var deferredInstallPrompt = null;
+  var autoGeoAttempted = false;
   var activeProfileSlot = "self";
   var countryCode = null;
   var countryName = null;
@@ -1241,6 +1242,47 @@
     );
   }
 
+  function requestGeolocationAuto() {
+    if (lastPos || autoGeoAttempted) return;
+    autoGeoAttempted = true;
+    if (!navigator.geolocation) return;
+
+    // Force an immediate permission prompt where the browser supports it.
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        onPos(pos);
+      },
+      function (err) {
+        if (err && err.code === 1) {
+          showToast(
+            "La localisation est bloquée. Autorisez-la dans les réglages du navigateur pour un mode automatique.",
+            true
+          );
+          return;
+        }
+        startGeolocation();
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
+
+  function setupAutoGeoRetry() {
+    if (!navigator.permissions || !navigator.permissions.query) return;
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then(function (status) {
+        if (status.state === "granted" && !lastPos) {
+          startGeolocation();
+        }
+        status.onchange = function () {
+          if (status.state === "granted" && !lastPos) {
+            startGeolocation();
+          }
+        };
+      })
+      .catch(function () {});
+  }
+
   var activeTabId = "h";
 
   function setActiveTab(tabId) {
@@ -1657,9 +1699,13 @@
 
     renderEmergency();
     setActiveTab("h");
-    if (!lastPos) {
-      startGeolocation();
-    }
+    requestGeolocationAuto();
+    setupAutoGeoRetry();
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible" && !lastPos) {
+        requestGeolocationAuto();
+      }
+    });
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () {
