@@ -234,6 +234,12 @@
     }, 5000);
   }
 
+  function normalizeCountryDisplayName(name) {
+    var n = String(name || "").trim();
+    if (!n) return n;
+    return n.replace(/\s*\((la|le|les|l'|el|the|die|der|das)\)\s*$/i, "").trim();
+  }
+
   function detectPreferredLanguage() {
     var langs = (navigator.languages && navigator.languages.length
       ? navigator.languages
@@ -1020,7 +1026,7 @@
       if (countryName && countryCode) {
         el.urgenceCountry.textContent =
           countryName +
-          (countryDialCode ? " - Indicatif: " + countryDialCode : "");
+          (countryDialCode ? " - Indicatif pays: " + countryDialCode : "");
       } else if (lastPos && !countryCode) {
         el.urgenceCountry.textContent =
           "Pays non identifié automatiquement — numéros génériques ci-dessous.";
@@ -1229,7 +1235,7 @@
     detectCountryCenterByIso(iso)
       .then(function (p) {
         countryCode = p.code;
-        countryName = p.name;
+        countryName = normalizeCountryDisplayName(p.name);
         countryDialCode = p.dialCode || null;
         countrySource = "sim";
         lastPos = { coords: { latitude: p.lat, longitude: p.lon } };
@@ -1247,10 +1253,10 @@
           el.simCountryInfo.classList.remove("hidden");
           el.simCountryInfo.textContent =
             "Test hors ligne actif : " +
-            p.name +
-            (p.dialCode ? " - Indicatif: " + p.dialCode : "");
+            normalizeCountryDisplayName(p.name) +
+            (p.dialCode ? " - Indicatif pays: " + p.dialCode : "");
         }
-        showToast("Simulation active : " + p.name + ".");
+        showToast("Simulation active : " + normalizeCountryDisplayName(p.name) + ".");
       })
       .catch(function () {
         showToast("Impossible de simuler ce pays. Vérifiez le code ISO.", true);
@@ -1322,7 +1328,9 @@
         if (countryResolveMode !== "geo") return;
         var nextCode = data.countryCode || null;
         countryCode = nextCode;
-        countryName = data.countryName || data.principalSubdivision || null;
+        countryName = normalizeCountryDisplayName(
+          data.countryName || data.principalSubdivision || null
+        );
         countryDialCode = null;
         countrySource = countryCode ? "geo" : null;
         clearFallbackMode();
