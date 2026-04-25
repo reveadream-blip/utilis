@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" fill="#1a5f4a"/>
+  <circle cx="96" cy="80" r="32" fill="#2d9d78"/>
+  <path fill="#fff" d="M96 40c-18 0-32 14-32 32 0 24 32 56 32 56s32-32 32-56c0-18-14-32-32-32zm0 12c9 0 16 7 16 16s-7 16-16 16-16-7-16-16 7-16 16-16z"/>
+  <text x="96" y="168" text-anchor="middle" fill="#b8e0d4" font-family="system-ui,sans-serif" font-size="18" font-weight="700">Infos+</text>
+</svg>

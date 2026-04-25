@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="40" fill="#1a5f4a"/>
+  <path fill="#fff" d="M96 32c-22 0-40 18-40 40 0 30 40 80 40 80s40-50 40-80c0-22-18-40-40-40zm0 52c-7 0-12-5-12-12s5-12 12-12 12 5 12 12-5 12-12 12z"/>
+  <text x="96" y="165" text-anchor="middle" fill="#c8e8de" font-family="system-ui,sans-serif" font-size="20" font-weight="700">i+</text>
+</svg>

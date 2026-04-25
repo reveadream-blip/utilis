@@ -1,0 +1,8 @@
+{
+  "name": "infos-indispensables",
+  "private": true,
+  "description": "PWA — infos utiles autour de votre position",
+  "scripts": {
+    "start": "npx --yes serve -l 5173"
+  }
+}

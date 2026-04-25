@@ -1,0 +1,29 @@
+{
+  "name": "Infos Indispensables",
+  "short_name": "Infos+",
+  "description": "Numéros utiles, urgences et services autour de votre position.",
+  "id": "/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f1419",
+  "theme_color": "#1a5f4a",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["lifestyle", "health", "maps"],
+  "icons": [
+    {
+      "src": "icons/icon-192.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

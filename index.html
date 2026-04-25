@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="Numéros d’urgence, services et informations utiles autour de vous."
+    />
+    <meta name="theme-color" content="#1a5f4a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Infos+" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-maskable.svg" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <title>Infos Indispensables</title>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <h1>Infos Indispensables</h1>
+      </div>
+      <span class="badge-pwa">PWA</span>
+    </header>
+
+    <section class="card" id="section-urgence" aria-label="Urgence">
+      <h2>Urgence (UE / compatible)</h2>
+      <p class="status">
+        Le <strong>112</strong> est le numéro d’appel d’urgence unifié dans
+        toute l’UE. Ailleurs, adaptez selon le pays (déploiement futur).
+      </p>
+      <div class="urgence-row">
+        <button type="button" class="btn btn-danger" id="call-112" title="Appeler le 112">
+          Appeler le 112
+        </button>
+      </div>
+    </section>
+
+    <section class="card" id="section-geo" aria-label="Géolocalisation">
+      <h2>Autour de moi</h2>
+      <p class="status" id="geo-status">
+        Activez la <strong>localisation</strong> pour afficher les services
+        proches (bientôt : hôpitaux, commissariats, sapeurs-pompiers, etc.).
+      </p>
+      <div class="geo-dots" aria-hidden="true" id="geo-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <p id="geo-coords" class="status hidden">
+        Coordonnées (à titre indicatif) : <strong>—</strong>
+      </p>
+      <button type="button" class="btn btn-primary" id="btn-geo">
+        Autoriser la localisation
+      </button>
+    </section>
+
+    <section
+      class="card hidden"
+      id="poi-placeholder"
+      aria-label="Exemples de fiches (à connecter)"
+    >
+      <h2>Exemples (prochaine étape)</h2>
+      <ul class="poi-list">
+        <li>Hôpital le plus proche <span>carte + itinéraire</span></li>
+        <li>Police / gendarmerie <span>—</span></li>
+        <li>Pompiers <span>—</span></li>
+        <li>Pharmacies de garde <span>—</span></li>
+      </ul>
+    </section>
+
+    <p class="footer-note">
+      Application web installable : depuis Chrome ou Edge sur Android, menu
+      «&nbsp;Installer l’application&nbsp;» pour un accès comme une appli
+      classique. Les données d’urgence seront vérifiées par source (version
+      ultérieure).
+    </p>
+
+    <script src="js/app.js" defer></script>
+  </body>
+</html>
