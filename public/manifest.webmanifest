@@ -1,7 +1,7 @@
 {
-  "name": "Infos Indispensables",
-  "short_name": "Infos+",
-  "description": "Urgences, hôpitaux, secours, santé, fiche d’urgence et raccourcis — partout, autour de vous.",
+  "name": "SOS Emergency",
+  "short_name": "SOS",
+  "description": "Emergency numbers, nearby help services, emergency profile, and shortcuts.",
   "id": "/",
   "start_url": "./",
   "scope": "./",
@@ -9,7 +9,7 @@
   "orientation": "portrait-primary",
   "background_color": "#070a0d",
   "theme_color": "#0e4d3a",
-  "lang": "fr",
+  "lang": "en",
   "dir": "ltr",
   "categories": ["lifestyle", "health", "maps"],
   "icons": [

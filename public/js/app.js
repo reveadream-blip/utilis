@@ -5,7 +5,9 @@
   var STORAGE_SHORTCUTS = "infos_indispensables_shortcuts_v1";
   var STORAGE_PLACES_CACHE = "infos_indispensables_places_cache_v1";
   var STORAGE_FAVORITES = "infos_indispensables_favorites_v1";
+  var STORAGE_TRANSLATIONS = "infos_indispensables_i18n_cache_v1";
   var CACHE_MAX_KM = 45;
+  var SOURCE_LANG = "fr";
 
   var el = {};
   var watchId = null;
@@ -157,7 +159,7 @@
       var lon = pos.coords.longitude;
       var mapsUrl = "https://www.google.com/maps?q=" + lat + "," + lon;
       var text =
-        "Ma position (Infos Indispensables)\n" +
+        "My location (SOS Emergency)\n" +
         lat.toFixed(5) +
         ", " +
         lon.toFixed(5) +
@@ -227,6 +229,122 @@
     setTimeout(function () {
       t.remove();
     }, 5000);
+  }
+
+  function detectPreferredLanguage() {
+    var langs = (navigator.languages && navigator.languages.length
+      ? navigator.languages
+      : [navigator.language || "en"]) || ["en"];
+    var first = String(langs[0] || "en").toLowerCase();
+    return first.split("-")[0] || "en";
+  }
+
+  function readTranslationCache() {
+    try {
+      var raw = localStorage.getItem(STORAGE_TRANSLATIONS);
+      if (!raw) return {};
+      var obj = JSON.parse(raw);
+      return obj && typeof obj === "object" ? obj : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function writeTranslationCache(cache) {
+    try {
+      localStorage.setItem(STORAGE_TRANSLATIONS, JSON.stringify(cache));
+    } catch (e) {}
+  }
+
+  function shouldTranslateText(text) {
+    if (!text) return false;
+    var t = String(text).trim();
+    if (!t) return false;
+    if (t.length < 2) return false;
+    if (/^\d+([.,]\d+)?$/.test(t)) return false;
+    if (/^(SOS|PWA|CH|FR|US)$/i.test(t)) return false;
+    return /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(t);
+  }
+
+  function translateText(text, targetLang, cache) {
+    var key = targetLang + "::" + text;
+    if (cache[key]) return Promise.resolve(cache[key]);
+    var url =
+      "https://api.mymemory.translated.net/get?q=" +
+      encodeURIComponent(text) +
+      "&langpair=" +
+      encodeURIComponent(SOURCE_LANG + "|" + targetLang);
+    return fetch(url, { method: "GET", cache: "no-store" })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (d) {
+        var translated =
+          d && d.responseData && d.responseData.translatedText
+            ? String(d.responseData.translatedText).trim()
+            : "";
+        if (!translated) return text;
+        cache[key] = translated;
+        return translated;
+      })
+      .catch(function () {
+        return text;
+      });
+  }
+
+  function applyAutoI18n() {
+    var targetLang = detectPreferredLanguage();
+    document.documentElement.lang = targetLang;
+    if (!targetLang || targetLang === SOURCE_LANG) return;
+
+    var cache = readTranslationCache();
+    var nodes = [];
+    document.querySelectorAll(
+      "h1,h2,p,label,button,a,span,li,strong,option"
+    ).forEach(function (elNode) {
+      if (!elNode || !elNode.childNodes || !elNode.childNodes.length) return;
+      if (elNode.id === "urgence-buttons") return;
+      Array.prototype.forEach.call(elNode.childNodes, function (n) {
+        if (!n || n.nodeType !== 3) return;
+        var txt = n.nodeValue;
+        if (!shouldTranslateText(txt)) return;
+        nodes.push({ node: n, text: txt.trim() });
+      });
+      ["title", "placeholder", "aria-label"].forEach(function (attr) {
+        var val = elNode.getAttribute && elNode.getAttribute(attr);
+        if (shouldTranslateText(val)) {
+          nodes.push({ node: elNode, attr: attr, text: val.trim() });
+        }
+      });
+    });
+
+    var uniq = {};
+    nodes.forEach(function (x) {
+      uniq[x.text] = 1;
+    });
+    var phrases = Object.keys(uniq).slice(0, 220);
+    var jobs = phrases.map(function (txt) {
+      return translateText(txt, targetLang, cache).then(function (translated) {
+        return { src: txt, dst: translated };
+      });
+    });
+
+    Promise.all(jobs).then(function (results) {
+      var map = {};
+      results.forEach(function (r) {
+        map[r.src] = r.dst;
+      });
+      nodes.forEach(function (x) {
+        var tr = map[x.text];
+        if (!tr || tr === x.text) return;
+        if (x.attr) {
+          x.node.setAttribute(x.attr, tr);
+        } else {
+          x.node.nodeValue = x.node.nodeValue.replace(x.text, tr);
+        }
+      });
+      writeTranslationCache(cache);
+    });
   }
 
   function isStandaloneApp() {
@@ -1390,7 +1508,7 @@
       var data = getProfilesData();
       var o = data.profiles[activeProfileSlot] || {};
       var lines = [
-        "— Fiche urgence (Infos Indispensables) —",
+        "— Emergency profile (SOS Emergency) —",
         "Profil: " + profileSlotLabel(activeProfileSlot),
         "Identité: " + (o.name || "—"),
         "Groupe sanguin: " + (o.blood || "—"),
@@ -1425,7 +1543,7 @@
         "<!doctype html><html><head><meta charset='utf-8'><title>Fiche urgence</title>" +
         "<style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin:0 0 12px}p{margin:6px 0}strong{display:inline-block;min-width:180px}</style>" +
         "</head><body>" +
-        "<h1>Fiche urgence - Infos Indispensables</h1>" +
+        "<h1>Emergency profile - SOS Emergency</h1>" +
         "<p><strong>Profil :</strong> " + profileSlotLabel(activeProfileSlot) + "</p>" +
         "<p><strong>Identité :</strong> " + (o.name || "-") + "</p>" +
         "<p><strong>Groupe sanguin :</strong> " + (o.blood || "-") + "</p>" +
@@ -1572,6 +1690,7 @@
 
   function init() {
     initEls();
+    applyAutoI18n();
     setupInstallPrompt();
     loadProfile();
     renderShortcuts();
