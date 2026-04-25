@@ -13,6 +13,8 @@
   var activeProfileSlot = "self";
   var countryCode = null;
   var countryName = null;
+  var countrySource = null;
+  var countryResolveMode = "geo";
   var nearbyLoaded = false;
   var tabLoaded = {};
   var emergencyRenderToken = 0;
@@ -35,6 +37,7 @@
     el.urgenceButtons = $("urgence-buttons");
     el.urgenceHint = $("urgence-hint");
     el.urgenceCountry = $("urgence-country");
+    el.btnCountryIp = $("btn-country-ip");
     el.sectionFrListen = $("section-fr-listen");
     el.frListenGrid = $("fr-listen-grid");
     el.sectionFrPharmacy = $("section-fr-pharmacy");
@@ -273,6 +276,7 @@
   function activateFallbackMode(reason) {
     countryCode = null;
     countryName = null;
+    countrySource = null;
     renderEmergency();
     refreshSosOverlay();
     if (!el.fallbackBanner) return;
@@ -815,7 +819,9 @@
     if (!el.urgenceButtons || !window.InfosEmergency) return;
     if (el.urgenceCountry) {
       if (countryName && countryCode) {
-        el.urgenceCountry.textContent = countryName + " (" + countryCode + ")";
+        var src = countrySource === "ip" ? "IP/VPN" : "GPS";
+        el.urgenceCountry.textContent =
+          countryName + " (" + countryCode + ") — source " + src + ".";
       } else if (lastPos && !countryCode) {
         el.urgenceCountry.textContent =
           "Pays non identifié automatiquement — numéros génériques ci-dessous.";
@@ -955,6 +961,56 @@
     });
   }
 
+  function detectCountryByIp() {
+    function ipapi() {
+      return fetch("https://ipapi.co/json/", { method: "GET", cache: "no-store" })
+        .then(function (r) {
+          if (!r.ok) throw new Error("ipapi indisponible");
+          return r.json();
+        })
+        .then(function (d) {
+          return {
+            countryCode: d && d.country_code ? String(d.country_code).toUpperCase() : null,
+            countryName: d && d.country_name ? d.country_name : null,
+          };
+        });
+    }
+    function ipwho() {
+      return fetch("https://ipwho.is/", { method: "GET", cache: "no-store" })
+        .then(function (r) {
+          if (!r.ok) throw new Error("ipwho indisponible");
+          return r.json();
+        })
+        .then(function (d) {
+          return {
+            countryCode: d && d.country_code ? String(d.country_code).toUpperCase() : null,
+            countryName: d && d.country ? d.country : null,
+          };
+        });
+    }
+    return ipapi().catch(function () {
+      return ipwho();
+    });
+  }
+
+  function useIpCountryMode() {
+    countryResolveMode = "ip";
+    detectCountryByIp()
+      .then(function (data) {
+        if (!data || !data.countryCode) throw new Error("Pays IP introuvable");
+        countryCode = data.countryCode;
+        countryName = data.countryName || data.countryCode;
+        countrySource = "ip";
+        clearFallbackMode();
+        renderEmergency();
+        refreshSosOverlay();
+        showToast("Pays réseau appliqué : " + countryName + " (" + countryCode + ").");
+      })
+      .catch(function () {
+        showToast("Impossible de détecter le pays via IP/VPN.", true);
+      });
+  }
+
   function resetTabState() {
     TAB_ORDER.forEach(function (k) {
       tabLoaded[k] = false;
@@ -1006,8 +1062,10 @@
 
     reverseGeocode(lat, lon)
       .then(function (data) {
+        if (countryResolveMode === "ip") return;
         countryCode = data.countryCode || null;
         countryName = data.countryName || data.principalSubdivision || null;
+        countrySource = countryCode ? "geo" : null;
         clearFallbackMode();
         renderEmergency();
       })
@@ -1442,6 +1500,7 @@
 
     if (el.btnGeo) {
       el.btnGeo.addEventListener("click", function () {
+        countryResolveMode = "geo";
         if (watchId !== null) {
           navigator.geolocation.clearWatch(watchId);
           watchId = null;
@@ -1449,6 +1508,9 @@
         el.btnGeo.textContent = "Localisation en cours…";
         startGeolocation();
       });
+    }
+    if (el.btnCountryIp) {
+      el.btnCountryIp.addEventListener("click", useIpCountryMode);
     }
 
   if (el.btnRefreshPlaces) {
