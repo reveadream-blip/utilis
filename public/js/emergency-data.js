@@ -3,6 +3,11 @@
  * 112 = numéro d'urgence harmonisé dans l'UE (et plusieurs pays voisins).
  */
 (function (root) {
+  var API_ALL = "https://emergencynumberapi.com/api/data/all";
+  var CACHE_KEY = "infos_indispensables_emergency_all_v1";
+  var CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  var WORLD_DATA = null;
+
   var EU = {
     AT: 1,
     BE: 1,
@@ -192,10 +197,135 @@
         { num: "999", label: "Urgences (classique)" },
       ],
     },
+    TH: {
+      countryLabel: "Thaïlande",
+      lines: [
+        { num: "191", label: "Police / urgence générale" },
+        { num: "1669", label: "Urgence médicale / ambulance" },
+        { num: "199", label: "Pompiers" },
+        { num: "1155", label: "Tourist Police (anglais)" },
+      ],
+      hint:
+        "En Thaïlande, privilégiez 191 (urgence générale), 1669 (médical) et 199 (incendie).",
+    },
   };
+
+  function readCachedWorldData() {
+    try {
+      if (!root.localStorage) return null;
+      var raw = root.localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      var p = JSON.parse(raw);
+      if (!p || !p.ts || !Array.isArray(p.data)) return null;
+      if (Date.now() - p.ts > CACHE_TTL_MS) return null;
+      return p.data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeCachedWorldData(data) {
+    try {
+      if (!root.localStorage) return;
+      root.localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({ ts: Date.now(), data: data })
+      );
+    } catch (e) {}
+  }
+
+  function indexWorldData(arr) {
+    var out = {};
+    (arr || []).forEach(function (row) {
+      if (!row || !row.Country || !row.Country.ISOCode) return;
+      out[String(row.Country.ISOCode).toUpperCase()] = row;
+    });
+    return out;
+  }
+
+  function loadWorldData() {
+    if (WORLD_DATA) return Promise.resolve(WORLD_DATA);
+    var cached = readCachedWorldData();
+    if (cached && cached.length) {
+      WORLD_DATA = indexWorldData(cached);
+      return Promise.resolve(WORLD_DATA);
+    }
+    return fetch(API_ALL, { method: "GET", cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("Emergency API indisponible");
+        return r.json();
+      })
+      .then(function (arr) {
+        if (!Array.isArray(arr)) throw new Error("Format API invalide");
+        writeCachedWorldData(arr);
+        WORLD_DATA = indexWorldData(arr);
+        return WORLD_DATA;
+      });
+  }
+
+  function addLines(lines, nums, label) {
+    if (!nums || !nums.length) return;
+    nums.forEach(function (n) {
+      var num = String(n || "").trim();
+      if (!num) return;
+      if (
+        !lines.some(function (x) {
+          return x.num === num && x.label === label;
+        })
+      ) {
+        lines.push({ num: num, label: label });
+      }
+    });
+  }
+
+  function parseApiCountry(apiCountry, isoCode) {
+    if (!apiCountry) return null;
+    var lines = [];
+    addLines(lines, apiCountry.Dispatch && apiCountry.Dispatch.All, "Urgences (dispatch)");
+    addLines(lines, apiCountry.Police && apiCountry.Police.All, "Police");
+    addLines(lines, apiCountry.Ambulance && apiCountry.Ambulance.All, "Ambulance");
+    addLines(lines, apiCountry.Fire && apiCountry.Fire.All, "Pompiers");
+
+    if (!lines.length && apiCountry.Member_112) {
+      lines.push({ num: "112", label: "Urgences (112)" });
+    }
+
+    if (!lines.length) return null;
+
+    var hint = null;
+    if (apiCountry.LocalOnly) {
+      hint =
+        "Des numéros locaux peuvent être requis selon la zone : vérifiez la disponibilité régionale.";
+    } else if (apiCountry.Member_112) {
+      hint = "Le 112 peut aussi fonctionner dans ce pays.";
+    }
+
+    return {
+      countryLabel:
+        (apiCountry.Country && apiCountry.Country.Name) || isoCode || "Inconnu",
+      lines: lines,
+      hint: hint,
+    };
+  }
+
+  function getEmergencyForCountryDynamic(cc) {
+    var base = getEmergencyForCountry(cc);
+    var code = (cc || "").toUpperCase();
+    if (!code) return Promise.resolve(base);
+    return loadWorldData()
+      .then(function (world) {
+        var row = world && world[code];
+        var parsed = parseApiCountry(row, code);
+        return parsed || base;
+      })
+      .catch(function () {
+        return base;
+      });
+  }
 
   root.InfosEmergency = {
     getEmergencyForCountry: getEmergencyForCountry,
+    getEmergencyForCountryDynamic: getEmergencyForCountryDynamic,
     isEu: function (cc) {
       return !!EU[(cc || "").toUpperCase()];
     },

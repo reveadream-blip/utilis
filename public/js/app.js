@@ -15,6 +15,7 @@
   var countryName = null;
   var nearbyLoaded = false;
   var tabLoaded = {};
+  var emergencyRenderToken = 0;
 
   var EAGER = ["h", "fire", "pol", "ph"];
   var LAZY = ["med", "ve", "def", "emb"];
@@ -810,9 +811,8 @@
       });
   }
 
-  function renderEmergency() {
+  function renderEmergencyWithInfo(info) {
     if (!el.urgenceButtons || !window.InfosEmergency) return;
-    var info = window.InfosEmergency.getEmergencyForCountry(countryCode || "");
     if (el.urgenceCountry) {
       if (countryName && countryCode) {
         el.urgenceCountry.textContent = countryName + " (" + countryCode + ")";
@@ -849,6 +849,24 @@
       el.urgenceHint.classList.toggle("hidden", !info.hint);
     }
     updateFrSection();
+  }
+
+  function renderEmergency() {
+    if (!window.InfosEmergency) return;
+    var code = countryCode || "";
+    var token = ++emergencyRenderToken;
+    var quick = window.InfosEmergency.getEmergencyForCountry(code);
+    renderEmergencyWithInfo(quick);
+    if (!window.InfosEmergency.getEmergencyForCountryDynamic) return;
+    window.InfosEmergency
+      .getEmergencyForCountryDynamic(code)
+      .then(function (resolved) {
+        if (token !== emergencyRenderToken) return;
+        if (!resolved || !resolved.lines || !resolved.lines.length) return;
+        renderEmergencyWithInfo(resolved);
+        refreshSosOverlay();
+      })
+      .catch(function () {});
   }
 
   var FR_LISTEN = [
