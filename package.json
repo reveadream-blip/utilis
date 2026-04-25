@@ -3,6 +3,10 @@
   "private": true,
   "description": "PWA — infos utiles autour de votre position",
   "scripts": {
-    "start": "npx --yes serve -l 5173"
+    "start": "npx --yes serve public -l 5173",
+    "deploy": "npx wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.16.0"
   }
 }
