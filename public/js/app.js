@@ -1026,6 +1026,7 @@
       if (countryName && countryCode) {
         el.urgenceCountry.textContent =
           countryName +
+          " - Indicatif pays: " + countryCode +
           (countryDialCode ? " - Indicatif tél: " + countryDialCode : "");
       } else if (lastPos && !countryCode) {
         el.urgenceCountry.textContent =
@@ -1254,6 +1255,7 @@
           el.simCountryInfo.textContent =
             "Test hors ligne actif : " +
             normalizeCountryDisplayName(p.name) +
+            " - Indicatif pays: " + p.code +
             (p.dialCode ? " - Indicatif tél: " + p.dialCode : "");
         }
         showToast("Simulation active : " + normalizeCountryDisplayName(p.name) + ".");
