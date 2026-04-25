@@ -779,33 +779,6 @@ a:hover {
   background: rgba(201, 76, 76, 0.4);
 }
 
-.card--muted {
-  border-style: dashed;
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(26, 34, 44, 0.6);
-}
-
-.card--muted h2 {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.card--muted h2::after {
-  display: none;
-}
-
-.roadmap-list {
-  margin: 8px 0 0;
-  padding-left: 1.1rem;
-  color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1.55;
-}
-
-.roadmap-list li {
-  margin-bottom: 8px;
-}
-
 .network-banner {
   max-width: var(--shell-max);
   margin: 0 auto 14px;
