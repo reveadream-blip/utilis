@@ -10,7 +10,7 @@
       name="description"
       content="Urgences, lieux de secours et santé autour de vous, fiche d’urgence et raccourcis — partout."
     />
-    <meta name="theme-color" content="#1a5f4a" />
+    <meta name="theme-color" content="#0e4d3a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
@@ -21,13 +21,24 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/icon-maskable.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="css/styles.css" />
     <title>Infos Indispensables</title>
   </head>
   <body>
+    <div class="app-bg" aria-hidden="true"></div>
     <header class="app-header">
       <div class="brand">
-        <h1>Infos Indispensables</h1>
+        <span class="brand__mark" aria-hidden="true"></span>
+        <div class="brand__text">
+          <h1>Infos Indispensables</h1>
+          <p class="brand__tagline">Urgences &amp; lieux utiles près de vous</p>
+        </div>
       </div>
       <span class="badge-pwa">PWA</span>
     </header>
@@ -86,7 +97,8 @@
       <a class="app-nav__link" href="#section-shortcuts">Raccourcis</a>
     </nav>
 
-    <section class="card" id="section-urgence" aria-label="Urgence">
+    <main class="app-shell">
+    <section class="card card--urgence" id="section-urgence" aria-label="Urgence">
       <h2>Urgence</h2>
       <p class="status status--tight" id="urgence-country">
         Localisation requise pour adapter les numéros au pays détecté.
@@ -253,6 +265,7 @@
         <li><strong>Android (Play)</strong> : même app en TWA / WebView pour raccourci système et notifications (si besoin).</li>
       </ul>
     </section>
+    </main>
 
     <p class="footer-note">
       Cartographie : <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a>.
