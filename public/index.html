@@ -8,7 +8,7 @@
     />
     <meta
       name="description"
-      content="Numéros d’urgence, services et informations utiles autour de vous."
+      content="Urgences, lieux de secours et santé autour de vous, fiche d’urgence et raccourcis — partout."
     />
     <meta name="theme-color" content="#1a5f4a" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -32,6 +32,13 @@
       <span class="badge-pwa">PWA</span>
     </header>
 
+    <nav class="app-nav" aria-label="Accès rapide">
+      <a class="app-nav__link" href="#section-urgence">Urgence</a>
+      <a class="app-nav__link" href="#section-geo">Lieux</a>
+      <a class="app-nav__link" href="#section-profile">Fiche</a>
+      <a class="app-nav__link" href="#section-shortcuts">Raccourcis</a>
+    </nav>
+
     <section class="card" id="section-urgence" aria-label="Urgence">
       <h2>Urgence</h2>
       <p class="status status--tight" id="urgence-country">
@@ -40,16 +47,24 @@
       <div id="urgence-buttons" class="urgence-grid" role="group" aria-label="Numéros d’urgence"></div>
       <p class="status urg-hint hidden" id="urgence-hint"></p>
       <p class="legal-note">
-        Numéros à titre indicatif — en cas de doute, vérifiez auprès des autorités du pays. Ne remplace pas les consignes des services de secours.
+        Numéros indicatifs — en cas de doute, source officielle du pays. En danger immédiat, appelez d’abord le numéro d’urgence (ex. 112, 15, 17 en France, etc. selon la situation).
       </p>
     </section>
 
+    <section class="card hidden" id="section-fr-listen" aria-label="Lignes d’écoute France">
+      <h2>Écoute &amp; prévention (France)</h2>
+      <p class="status status--tight">
+        Lignes nationales (horaires / modalités : sites des autorités). Complément des urgences, pas un substitut au 15 / 17 / 18 / 112.
+      </p>
+      <div class="urgence-grid" id="fr-listen-grid" role="group"></div>
+    </section>
+
     <section class="card" id="section-geo" aria-label="Géolocalisation">
-      <h2>Autour de moi</h2>
+      <h2>Autour de moi (OpenStreetMap)</h2>
       <p class="status" id="geo-status">
-        Activez la <strong>localisation</strong> pour détecter le pays, les numéros
-        utiles et les lieux à proximité : hôpitaux, police / pompiers, pharmacies
-        (données OpenStreetMap).
+        Activez la <strong>localisation</strong> : pays détecté, numéros, puis
+        hôpitaux, pompiers, police (dont gendarmerie si mappé), pharmacies ; autres
+        onglets (médecins, vétos, défibrillateurs, ambassades) au 1ᵉʳ accès.
       </p>
       <div class="geo-dots" aria-hidden="true" id="geo-dots">
         <span></span><span></span><span></span>
@@ -62,70 +77,121 @@
       </button>
     </section>
 
-    <section
-      class="card hidden"
-      id="section-places"
-      aria-label="Lieux à proximité"
-    >
+    <section class="card hidden" id="section-places" aria-label="Lieux à proximité">
       <div class="card-head">
         <h2>Lieux à proximité</h2>
-        <button type="button" class="btn btn-ghost" id="btn-refresh-places" title="Recharger toutes les listes">
+        <button type="button" class="btn btn-ghost" id="btn-refresh-places" title="Tout recharger">
           Tout actualiser
         </button>
       </div>
       <p class="status status--tight" id="places-status"></p>
 
-      <div class="tabs" role="tablist" aria-label="Catégories de lieux">
-        <button
-          type="button"
-          class="tabs__btn tabs__btn--active"
-          data-tab="h"
-          role="tab"
-          aria-selected="true"
-          id="tab-btn-h"
-        >
-          Hôpitaux
-        </button>
-        <button
-          type="button"
-          class="tabs__btn"
-          data-tab="pf"
-          role="tab"
-          aria-selected="false"
-          id="tab-btn-pf"
-        >
-          Police &amp; pompiers
-        </button>
-        <button
-          type="button"
-          class="tabs__btn"
-          data-tab="ph"
-          role="tab"
-          aria-selected="false"
-          id="tab-btn-ph"
-        >
-          Pharmacies
-        </button>
+      <div class="tabs tabs--scroll" role="tablist" aria-label="Types de lieux">
+        <button type="button" class="tabs__btn tabs__btn--active" data-tab="h" role="tab" aria-selected="true" id="tab-btn-h">Hôpitaux</button>
+        <button type="button" class="tabs__btn" data-tab="fire" role="tab" id="tab-btn-fire">Pompiers</button>
+        <button type="button" class="tabs__btn" data-tab="pol" role="tab" id="tab-btn-pol">Police &amp; gend.</button>
+        <button type="button" class="tabs__btn" data-tab="ph" role="tab" id="tab-btn-ph">Pharmacies</button>
+        <button type="button" class="tabs__btn" data-tab="med" role="tab" id="tab-btn-med">Médecins &amp; cliniques</button>
+        <button type="button" class="tabs__btn" data-tab="ve" role="tab" id="tab-btn-ve">Vétérinaires</button>
+        <button type="button" class="tabs__btn" data-tab="def" role="tab" id="tab-btn-def">Défibrillateurs</button>
+        <button type="button" class="tabs__btn" data-tab="emb" role="tab" id="tab-btn-emb">Ambassades</button>
       </div>
 
       <div class="tabs__panel" data-tabpanel="h" role="tabpanel" aria-labelledby="tab-btn-h">
         <ul class="poi-list poi-list--rich" id="hospitals-list"></ul>
       </div>
-      <div class="tabs__panel hidden" data-tabpanel="pf" role="tabpanel" aria-labelledby="tab-btn-pf">
-        <ul class="poi-list poi-list--rich" id="police-fire-list"></ul>
+      <div class="tabs__panel hidden" data-tabpanel="fire" role="tabpanel" aria-labelledby="tab-btn-fire">
+        <ul class="poi-list poi-list--rich" id="fire-list"></ul>
+      </div>
+      <div class="tabs__panel hidden" data-tabpanel="pol" role="tabpanel" aria-labelledby="tab-btn-pol">
+        <ul class="poi-list poi-list--rich" id="police-list"></ul>
       </div>
       <div class="tabs__panel hidden" data-tabpanel="ph" role="tabpanel" aria-labelledby="tab-btn-ph">
         <ul class="poi-list poi-list--rich" id="pharmacies-list"></ul>
       </div>
+      <div class="tabs__panel hidden" data-tabpanel="med" role="tabpanel" aria-labelledby="tab-btn-med">
+        <ul class="poi-list poi-list--rich" id="med-list"></ul>
+      </div>
+      <div class="tabs__panel hidden" data-tabpanel="ve" role="tabpanel" aria-labelledby="tab-btn-ve">
+        <ul class="poi-list poi-list--rich" id="vet-list"></ul>
+      </div>
+      <div class="tabs__panel hidden" data-tabpanel="def" role="tabpanel" aria-labelledby="tab-btn-def">
+        <ul class="poi-list poi-list--rich" id="def-list"></ul>
+      </div>
+      <div class="tabs__panel hidden" data-tabpanel="emb" role="tabpanel" aria-labelledby="tab-btn-emb">
+        <ul class="poi-list poi-list--rich" id="emb-list"></ul>
+      </div>
+    </section>
+
+    <section class="card" id="section-profile" aria-label="Fiche d'urgence">
+      <h2>Ma fiche d’urgence</h2>
+      <p class="status status--tight">
+        Renseignements stockés <strong>uniquement sur cet appareil</strong> (navigateur). À montrer en cas d’accident / malaise ; vous pouvez copier le résumé.
+      </p>
+      <form id="form-profile" class="form-grid" autocomplete="on">
+        <label class="form-field"
+          >Nom / prénom
+          <input type="text" name="name" maxlength="120" />
+        </label>
+        <label class="form-field"
+          >Groupe sanguin
+          <input type="text" name="blood" maxlength="8" placeholder="ex. A+" />
+        </label>
+        <label class="form-field form-field--wide"
+          >Allergies
+          <input type="text" name="allergies" maxlength="200" />
+        </label>
+        <label class="form-field form-field--wide"
+          >Traitements en cours
+          <input type="text" name="meds" maxlength="200" />
+        </label>
+        <label class="form-field"
+          >Contact d’urgence (nom)
+          <input type="text" name="contact" maxlength="120" />
+        </label>
+        <label class="form-field"
+          >Téléphone du contact
+          <input type="tel" name="contactPhone" maxlength="40" />
+        </label>
+        <label class="form-field form-field--wide"
+          >Autres notes (médecin traitant, etc.)
+          <textarea name="notes" rows="2" maxlength="500"></textarea>
+        </label>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="btn-save-profile">Enregistrer</button>
+          <button type="button" class="btn btn-ghost" id="btn-copy-profile">Copier le résumé</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" id="section-shortcuts" aria-label="Raccourcis">
+      <h2>Raccourcis (travail &amp; outils)</h2>
+      <p class="status status--tight">
+        Liens vers intranet, webmail, outils, documentation — utiles en mobilité. Stockage local.
+      </p>
+      <ul class="shortcuts-list" id="shortcuts-list"></ul>
+      <button type="button" class="btn btn-primary" id="btn-add-shortcut">Ajouter un raccourci</button>
+    </section>
+
+    <section class="card card--muted" id="section-roadmap" aria-label="Pistes d’évolution">
+      <h2>Prochaines étapes (cohérentes avec l’app)</h2>
+      <ul class="roadmap-list">
+        <li><strong>Compte &amp; synchro</strong> (ex. Supabase) : fiche d’urgence chiffrée, multi-appareils, avec consentement explicite.</li>
+        <li><strong>Pharmacies de garde</strong> : source nationale par pays (API, flux officiels) car souvent absente d’OSM seul.</li>
+        <li><strong>Prévision locale</strong> : météo, risques, horaires de transports — sans surcharger l’écran d’urgence.</li>
+        <li><strong>Mode hors-ligne</strong> : mémoriser dernière position + listes mises en cache, lecture seule.</li>
+        <li><strong>Partage de position</strong> (opt-in) : lien temporaire pour proches, avec arrêt clair et confidentialité (RGPD).</li>
+        <li><strong>Android (Play)</strong> : même app en TWA / WebView pour raccourci système et notifications (si besoin).</li>
+      </ul>
     </section>
 
     <p class="footer-note">
-      Données cartographiques : contributeurs
-      <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a>.
-      Géolocalisation du pays : service tiers (BigDataCloud). Installez l’app via le menu du navigateur pour un accès rapide.
+      Cartographie : <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a>.
+      Géolocalisation pays : service tiers. Cette appli n’est pas un service officiel de secours — en cas de doute, appelez l’autorité compétente.
     </p>
 
     <script src="js/emergency-data.js" defer></script>
+    <script src="js/place-queries.js" defer></script>
     <script src="js/overpass.js" defer></script>
     <script src="js/app.js" defer></script>
   </body>

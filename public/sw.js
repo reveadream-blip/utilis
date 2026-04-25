@@ -1,10 +1,11 @@
 /* Service Worker — cache des ressources pour usage hors connexion basique */
-const VERSION = "infos-indispensables-v5";
+const VERSION = "infos-indispensables-v8";
 const CORE = [
   "./",
   "./index.html",
   "./css/styles.css",
   "./js/emergency-data.js",
+  "./js/place-queries.js",
   "./js/overpass.js",
   "./js/app.js",
   "./manifest.webmanifest",

@@ -432,3 +432,171 @@ a:hover {
 .poi-item-main .poi-badge + strong {
   display: block;
 }
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 16px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-nav__link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-nav__link:hover {
+  color: var(--accent);
+  text-decoration: none;
+  background: rgba(45, 157, 120, 0.12);
+}
+
+.tabs--scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+.tabs--scroll .tabs__btn {
+  flex-shrink: 0;
+}
+
+.poi-badge--gend {
+  background: rgba(120, 100, 180, 0.4);
+  color: #ddd0f5;
+}
+
+.poi-badge--defib {
+  background: rgba(212, 160, 18, 0.35);
+  color: #ffe9a0;
+}
+
+.btn-tel--soft {
+  background: #3d5a8a;
+  min-height: 44px;
+  font-size: 0.95rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+  margin-top: 8px;
+}
+
+@media (max-width: 520px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.form-field--wide {
+  grid-column: 1 / -1;
+}
+
+.form-field input,
+.form-field textarea {
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.shortcuts-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.shortcut-link {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #9ee4c9;
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-mini {
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  min-height: auto;
+  background: rgba(201, 76, 76, 0.25);
+  color: #f5b0b0;
+  border: 1px solid rgba(201, 76, 76, 0.4);
+}
+
+.btn-mini:hover {
+  background: rgba(201, 76, 76, 0.4);
+}
+
+.card--muted {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(26, 34, 44, 0.6);
+}
+
+.card--muted h2 {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.roadmap-list {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.roadmap-list li {
+  margin-bottom: 8px;
+}

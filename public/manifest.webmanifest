@@ -1,7 +1,7 @@
 {
   "name": "Infos Indispensables",
   "short_name": "Infos+",
-  "description": "Numéros utiles, urgences et services autour de votre position.",
+  "description": "Urgences, hôpitaux, secours, santé, fiche d’urgence et raccourcis — partout, autour de vous.",
   "id": "/",
   "start_url": "./",
   "scope": "./",
