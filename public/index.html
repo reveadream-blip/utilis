@@ -34,6 +34,51 @@
 
     <p id="network-banner" class="network-banner hidden" role="status" aria-live="polite"></p>
 
+    <button
+      type="button"
+      class="fab-emergency"
+      id="btn-open-emergency"
+      title="Ouvrir le mode urgence (plein écran)"
+      aria-haspopup="dialog"
+      aria-controls="emergency-mode"
+    >
+      SOS
+    </button>
+
+    <div
+      id="emergency-mode"
+      class="emergency-mode hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="emergency-mode-title"
+      aria-hidden="true"
+    >
+      <div class="emergency-mode__inner">
+        <h2 class="emergency-mode__title" id="emergency-mode-title">Urgence</h2>
+        <p class="emergency-mode__lead" id="emergency-mode-sub">
+          En danger immédiat, appelez d’abord le numéro d’urgence du pays. Cet écran
+          n’est pas un service de secours officiel.
+        </p>
+        <a class="sos-tel" id="sos-tel-link" href="tel:112"
+          >Appeler <span id="sos-tel-label">le 112</span></a>
+        <p class="emergency-mode__hint" id="sos-tel-warn">En Europe, le 112 est souvent joignable. Confirmez le numéro selon le pays (localisation activée)</p>
+
+        <div class="emergency-mode__row">
+          <button type="button" class="btn btn-emg-secondary" id="btn-emergency-share">
+            Partager ma position
+          </button>
+        </div>
+        <div class="emergency-mode__row">
+          <button type="button" class="btn btn-emg-secondary" id="btn-emergency-fiche">
+            Ouvrir ma fiche d’urgence
+          </button>
+        </div>
+        <button type="button" class="btn btn-emg-close" id="btn-close-emergency">
+          Fermer
+        </button>
+      </div>
+    </div>
+
     <nav class="app-nav" aria-label="Accès rapide">
       <a class="app-nav__link" href="#section-urgence">Urgence</a>
       <a class="app-nav__link" href="#section-geo">Lieux</a>

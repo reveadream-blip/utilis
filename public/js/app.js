@@ -44,6 +44,147 @@
     el.btnCopyProfile = $("btn-copy-profile");
     el.shortcutsList = $("shortcuts-list");
     el.btnAddShortcut = $("btn-add-shortcut");
+    el.emergencyMode = $("emergency-mode");
+    el.btnOpenEmergency = $("btn-open-emergency");
+    el.btnCloseEmergency = $("btn-close-emergency");
+    el.sosTelLink = $("sos-tel-link");
+    el.sosTelLabel = $("sos-tel-label");
+    el.sosTelWarn = $("sos-tel-warn");
+    el.btnEmergencyShare = $("btn-emergency-share");
+    el.btnEmergencyFiche = $("btn-emergency-fiche");
+  }
+
+  var emergencyFocusBack = null;
+
+  function getPrimaryEmergencyLine() {
+    if (!window.InfosEmergency) {
+      return { num: "112", label: "Urgences (Europe)" };
+    }
+    var info = window.InfosEmergency.getEmergencyForCountry(countryCode || "");
+    var first = info.lines && info.lines[0];
+    if (first) return { num: first.num, label: first.label };
+    return { num: "112", label: "Urgences" };
+  }
+
+  function refreshSosOverlay() {
+    if (!el.sosTelLink || !el.sosTelLabel) return;
+    var L = getPrimaryEmergencyLine();
+    var digits = String(L.num).replace(/\s/g, "");
+    el.sosTelLink.href = "tel:" + digits;
+    el.sosTelLabel.textContent = L.num;
+    if (el.sosTelWarn) {
+      el.sosTelWarn.textContent =
+        countryCode && countryName
+          ? "Pays détecté : " + countryName + " — vérifiez le numéro approprié (police, SAMU, pompiers…)."
+          : "Activez la localisation dans l’app pour affiner le pays. Sinon, le 112 couvre souvent l’Europe.";
+    }
+  }
+
+  function openEmergencyMode() {
+    if (!el.emergencyMode) return;
+    emergencyFocusBack = document.activeElement;
+    refreshSosOverlay();
+    el.emergencyMode.classList.remove("hidden");
+    el.emergencyMode.setAttribute("aria-hidden", "false");
+    document.body.classList.add("emergency-mode-open");
+    if (el.sosTelLink) el.sosTelLink.focus();
+  }
+
+  function closeEmergencyMode() {
+    if (!el.emergencyMode) return;
+    el.emergencyMode.classList.add("hidden");
+    el.emergencyMode.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("emergency-mode-open");
+    if (emergencyFocusBack && emergencyFocusBack.focus) {
+      try {
+        emergencyFocusBack.focus();
+      } catch (e) {}
+    }
+    emergencyFocusBack = null;
+  }
+
+  function ensurePositionForShare(done) {
+    if (lastPos && lastPos.coords) {
+      done(null, lastPos);
+      return;
+    }
+    if (!navigator.geolocation) {
+      done(new Error("no-geo"), null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        lastPos = pos;
+        done(null, pos);
+      },
+      function () {
+        done(new Error("denied"), null);
+      },
+      { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 }
+    );
+  }
+
+  function shareMyPosition() {
+    ensurePositionForShare(function (err, pos) {
+      if (err || !pos) {
+        showToast(
+          "Position indisponible : activez la localisation dans « Autour de moi ».",
+          true
+        );
+        closeEmergencyMode();
+        var g = $("section-geo");
+        if (g) g.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      var lat = pos.coords.latitude;
+      var lon = pos.coords.longitude;
+      var mapsUrl = "https://www.google.com/maps?q=" + lat + "," + lon;
+      var text =
+        "Ma position (Infos Indispensables)\n" +
+        lat.toFixed(5) +
+        ", " +
+        lon.toFixed(5) +
+        "\n" +
+        mapsUrl;
+      if (
+        !window.confirm(
+          "Un texte avec vos coordonnées et un lien carte va être préparé. Continuer ?"
+        )
+      ) {
+        return;
+      }
+      if (navigator.share) {
+        navigator
+          .share({
+            title: "Ma position",
+            text: text,
+            url: mapsUrl,
+          })
+          .then(function () {
+            showToast("Partage effectué.");
+          })
+          .catch(function () {
+            copyTextFallback(text);
+          });
+      } else {
+        copyTextFallback(text);
+      }
+    });
+  }
+
+  function copyTextFallback(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        function () {
+          showToast("Texte copié — collez-le dans SMS, mail ou messagerie.");
+        },
+        function () {
+          showToast("Copie impossible : sélectionnez et copiez manuellement.", true);
+        }
+      );
+    } else {
+      showToast("Copie non supportée sur cet appareil.", true);
+    }
   }
 
   var UL = {
@@ -626,6 +767,9 @@
     if (el.sectionFrPharmacy) {
       el.sectionFrPharmacy.classList.toggle("hidden", countryCode !== "FR");
     }
+    if (el.emergencyMode && !el.emergencyMode.classList.contains("hidden")) {
+      refreshSosOverlay();
+    }
   }
 
   function reverseGeocode(lat, lon) {
@@ -948,6 +1092,28 @@
     if (el.btnAddShortcut) {
       el.btnAddShortcut.addEventListener("click", addShortcut);
     }
+
+    if (el.btnOpenEmergency) {
+      el.btnOpenEmergency.addEventListener("click", openEmergencyMode);
+    }
+    if (el.btnCloseEmergency) {
+      el.btnCloseEmergency.addEventListener("click", closeEmergencyMode);
+    }
+    if (el.btnEmergencyShare) {
+      el.btnEmergencyShare.addEventListener("click", shareMyPosition);
+    }
+    if (el.btnEmergencyFiche) {
+      el.btnEmergencyFiche.addEventListener("click", function () {
+        closeEmergencyMode();
+        var s = $("section-profile");
+        if (s) s.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && el.emergencyMode && !el.emergencyMode.classList.contains("hidden")) {
+        closeEmergencyMode();
+      }
+    });
 
     el.tabBtns.forEach(function (btn) {
       btn.addEventListener("click", function () {
