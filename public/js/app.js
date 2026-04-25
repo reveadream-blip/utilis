@@ -5,6 +5,7 @@
   var STORAGE_SHORTCUTS = "infos_indispensables_shortcuts_v1";
   var STORAGE_PLACES_CACHE = "infos_indispensables_places_cache_v1";
   var STORAGE_FAVORITES = "infos_indispensables_favorites_v1";
+  var STORAGE_COUNTRY_MODE = "infos_indispensables_country_mode_v1";
   var CACHE_MAX_KM = 45;
 
   var el = {};
@@ -1016,6 +1017,9 @@
 
   function useIpCountryMode() {
     countryResolveMode = "ip";
+    try {
+      localStorage.setItem(STORAGE_COUNTRY_MODE, "ip");
+    } catch (e) {}
     detectCountryByIp()
       .then(function (data) {
         if (!data || !data.countryCode) throw new Error("Pays IP introuvable");
@@ -1093,8 +1097,20 @@
   function resetSimulatedCountryMode() {
     countryResolveMode = "geo";
     countrySource = null;
+    try {
+      localStorage.setItem(STORAGE_COUNTRY_MODE, "geo");
+    } catch (e) {}
     showToast("Retour au mode GPS.");
     startGeolocation();
+  }
+
+  function getSavedCountryMode() {
+    try {
+      var m = localStorage.getItem(STORAGE_COUNTRY_MODE);
+      return m === "ip" || m === "sim" ? m : "geo";
+    } catch (e) {
+      return "geo";
+    }
   }
 
   function resetTabState() {
@@ -1587,6 +1603,9 @@
     if (el.btnGeo) {
       el.btnGeo.addEventListener("click", function () {
         countryResolveMode = "geo";
+        try {
+          localStorage.setItem(STORAGE_COUNTRY_MODE, "geo");
+        } catch (e) {}
         if (watchId !== null) {
           navigator.geolocation.clearWatch(watchId);
           watchId = null;
@@ -1651,7 +1670,10 @@
 
     renderEmergency();
     setActiveTab("h");
-    if (!lastPos) {
+    countryResolveMode = getSavedCountryMode();
+    if (countryResolveMode === "ip") {
+      useIpCountryMode();
+    } else if (!lastPos) {
       startGeolocation();
     }
 
