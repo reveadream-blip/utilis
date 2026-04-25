@@ -32,6 +32,8 @@
       <span class="badge-pwa">PWA</span>
     </header>
 
+    <p id="network-banner" class="network-banner hidden" role="status" aria-live="polite"></p>
+
     <nav class="app-nav" aria-label="Accès rapide">
       <a class="app-nav__link" href="#section-urgence">Urgence</a>
       <a class="app-nav__link" href="#section-geo">Lieux</a>
@@ -59,6 +61,27 @@
       <div class="urgence-grid" id="fr-listen-grid" role="group"></div>
     </section>
 
+    <section class="card hidden" id="section-fr-pharmacy" aria-label="Pharmacie de garde France">
+      <h2>Pharmacie de garde (France)</h2>
+      <p class="status status--tight">
+        Les horaires de garde ne sont pas toujours dans OpenStreetMap. Utilisez les services officiels pour la nuit et les jours fériés.
+      </p>
+      <div class="btn-row">
+        <a
+          class="btn btn-outline"
+          href="https://www.ordre.pharmacien.fr/annuaire-pharmacies/prendre-soin-de-vous/trouver-une-pharmacie-de-garde"
+          rel="noopener noreferrer"
+          target="_blank"
+          >Ordre des pharmaciens — gardes</a>
+        <a
+          class="btn btn-outline"
+          href="https://www.service-public.fr/particuliers/vosdroits/F3175"
+          rel="noopener noreferrer"
+          target="_blank"
+          >service-public.fr</a>
+      </div>
+    </section>
+
     <section class="card" id="section-geo" aria-label="Géolocalisation">
       <h2>Autour de moi (OpenStreetMap)</h2>
       <p class="status" id="geo-status">
@@ -72,6 +95,7 @@
       <p id="geo-coords" class="status hidden">
         Coordonnées (approx.) : <strong>—</strong>
       </p>
+      <p id="weather-strip" class="weather-strip hidden" aria-live="polite"></p>
       <button type="button" class="btn btn-primary" id="btn-geo">
         Autoriser la localisation
       </button>
@@ -179,7 +203,7 @@
         <li><strong>Compte &amp; synchro</strong> (ex. Supabase) : fiche d’urgence chiffrée, multi-appareils, avec consentement explicite.</li>
         <li><strong>Pharmacies de garde</strong> : source nationale par pays (API, flux officiels) car souvent absente d’OSM seul.</li>
         <li><strong>Prévision locale</strong> : météo, risques, horaires de transports — sans surcharger l’écran d’urgence.</li>
-        <li><strong>Mode hors-ligne</strong> : mémoriser dernière position + listes mises en cache, lecture seule.</li>
+        <li><strong>Mode hors-ligne (partiel)</strong> : listes OSM mémorisées sur l’appareil + bandeau réseau — poursuite possible avec tuiles carte et fiche synchro (Supabase).</li>
         <li><strong>Partage de position</strong> (opt-in) : lien temporaire pour proches, avec arrêt clair et confidentialité (RGPD).</li>
         <li><strong>Android (Play)</strong> : même app en TWA / WebView pour raccourci système et notifications (si besoin).</li>
       </ul>

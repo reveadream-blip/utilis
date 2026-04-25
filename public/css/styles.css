@@ -600,3 +600,56 @@ a:hover {
 .roadmap-list li {
   margin-bottom: 8px;
 }
+
+.network-banner {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  background: rgba(45, 157, 120, 0.15);
+  border: 1px solid rgba(45, 157, 120, 0.35);
+  color: #b8e8d8;
+}
+
+.network-banner--offline {
+  background: rgba(201, 76, 76, 0.15);
+  border-color: rgba(201, 76, 76, 0.4);
+  color: #f0c0c0;
+}
+
+.weather-strip {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: #9ee4c9;
+  padding: 8px 10px;
+  background: rgba(45, 157, 120, 0.12);
+  border-radius: 8px;
+  border: 1px solid rgba(45, 157, 120, 0.25);
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #9ee4c9;
+  border: 1px solid rgba(45, 157, 120, 0.55);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.btn-outline:hover {
+  background: rgba(45, 157, 120, 0.2);
+  text-decoration: none;
+}

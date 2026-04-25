@@ -3,6 +3,8 @@
 
   var STORAGE_PROFILE = "infos_indispensables_profile_v1";
   var STORAGE_SHORTCUTS = "infos_indispensables_shortcuts_v1";
+  var STORAGE_PLACES_CACHE = "infos_indispensables_places_cache_v1";
+  var CACHE_MAX_KM = 45;
 
   var el = {};
   var watchId = null;
@@ -32,6 +34,9 @@
     el.urgenceCountry = $("urgence-country");
     el.sectionFrListen = $("section-fr-listen");
     el.frListenGrid = $("fr-listen-grid");
+    el.sectionFrPharmacy = $("section-fr-pharmacy");
+    el.networkBanner = $("network-banner");
+    el.weatherStrip = $("weather-strip");
     el.tabBtns = document.querySelectorAll("[data-tab]");
     el.tabPanels = document.querySelectorAll("[data-tabpanel]");
     el.formProfile = $("form-profile");
@@ -99,6 +104,140 @@
       "&destination=" +
       encodeURIComponent(destLat + "," + destLon)
     );
+  }
+
+  function updateNetworkBanner() {
+    if (!el.networkBanner) return;
+    if (navigator.onLine) {
+      el.networkBanner.classList.add("hidden");
+      el.networkBanner.textContent = "";
+      el.networkBanner.classList.remove("network-banner--offline");
+    } else {
+      el.networkBanner.classList.remove("hidden");
+      el.networkBanner.classList.add("network-banner--offline");
+      el.networkBanner.textContent =
+        "Hors ligne — listes possibles depuis le cache (non à jour). Connexion requise pour actualiser.";
+    }
+  }
+
+  function readPlacesCache() {
+    try {
+      var raw = localStorage.getItem(STORAGE_PLACES_CACHE);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || typeof data !== "object" || !data.tabs) return null;
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function persistTabRows(key, rows, lat, lon) {
+    try {
+      var data = readPlacesCache() || { tabs: {} };
+      data.tabs = data.tabs || {};
+      data.lat = lat;
+      data.lon = lon;
+      data.ts = Date.now();
+      if (countryCode) data.countryCode = countryCode;
+      data.tabs[key] = (rows || []).map(function (r) {
+        return {
+          name: r.name,
+          km: r.km,
+          lat: r.lat,
+          lon: r.lon,
+          kind: r.kind,
+          policeKind: r.policeKind,
+          variant: r.variant,
+        };
+      });
+      localStorage.setItem(STORAGE_PLACES_CACHE, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function getCachedRowsForTab(key) {
+    var data = readPlacesCache();
+    if (!data || !data.tabs || !data.tabs[key]) return null;
+    return data.tabs[key];
+  }
+
+  function tryRestorePlacesFromCache(lat, lon, showUi) {
+    var data = readPlacesCache();
+    if (!data || data.lat == null || data.lon == null || !data.tabs) return false;
+    var d = haversineKm(lat, lon, data.lat, data.lon);
+    if (d > CACHE_MAX_KM) return false;
+    lastPos = { coords: { latitude: data.lat, longitude: data.lon } };
+    if (data.countryCode) countryCode = data.countryCode;
+    renderEmergency();
+    TAB_ORDER.forEach(function (k) {
+      var rows = data.tabs[k];
+      if (!rows || !rows.length) return;
+      tabLoaded[k] = true;
+      renderListFor(k, rows);
+    });
+    if (showUi && el.placesCard) el.placesCard.classList.remove("hidden");
+    if (showUi && el.placesStatus) {
+      el.placesStatus.textContent =
+        "Données mémorisées sur cet appareil (dernière session à proximité).";
+    }
+    return true;
+  }
+
+  function tryRestoreAnyCachedPlaces() {
+    var data = readPlacesCache();
+    if (!data || !data.tabs) return false;
+    var has = false;
+    TAB_ORDER.forEach(function (k) {
+      if (data.tabs[k] && data.tabs[k].length) has = true;
+    });
+    if (!has) return false;
+    if (data.lat != null && data.lon != null) {
+      lastPos = { coords: { latitude: data.lat, longitude: data.lon } };
+    }
+    if (data.countryCode) countryCode = data.countryCode;
+    renderEmergency();
+    TAB_ORDER.forEach(function (k) {
+      var rows = data.tabs[k];
+      if (!rows || !rows.length) return;
+      tabLoaded[k] = true;
+      renderListFor(k, rows);
+    });
+    if (el.placesCard) el.placesCard.classList.remove("hidden");
+    if (el.placesStatus) {
+      el.placesStatus.textContent =
+        "Hors ligne — affichage du dernier cache enregistré sur cet appareil.";
+    }
+    if (lastPos && el.coords) {
+      el.coords.classList.remove("hidden");
+      el.coords.querySelector("strong").textContent = formatPos(lastPos);
+    }
+    return true;
+  }
+
+  function fetchWeather(lat, lon) {
+    if (!el.weatherStrip || !navigator.onLine) return;
+    var url =
+      "https://api.open-meteo.com/v1/forecast?latitude=" +
+      encodeURIComponent(lat) +
+      "&longitude=" +
+      encodeURIComponent(lon) +
+      "&current_weather=true&timezone=auto";
+    fetch(url, { cache: "no-store" })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (d) {
+        if (!d || !d.current_weather || !el.weatherStrip) return;
+        var cw = d.current_weather;
+        el.weatherStrip.classList.remove("hidden");
+        el.weatherStrip.textContent =
+          "Météo à proximité : " +
+          cw.temperature +
+          " °C, vent ~" +
+          cw.windspeed +
+          " km/h (Open-Meteo, indicatif).";
+      })
+      .catch(function () {});
   }
 
   function runOverpass(q) {
@@ -375,14 +514,29 @@
   }
 
   function loadOneTab(key, lat, lon) {
-    if (tabLoaded[key]) return Promise.resolve();
+    if (tabLoaded[key]) return Promise.resolve({ key: key, skipped: true });
     var ul = $(UL[key]);
+    if (!navigator.onLine) {
+      var cached = getCachedRowsForTab(key);
+      if (cached && cached.length) {
+        tabLoaded[key] = true;
+        renderListFor(key, cached);
+        return Promise.resolve({ key: key, fromCache: true });
+      }
+      if (ul) {
+        ul.innerHTML =
+          '<li class="poi-empty">Hors ligne — aucune donnée mémorisée pour cet onglet.</li>';
+      }
+      return Promise.resolve({ key: key, offline: true });
+    }
     if (ul) ul.innerHTML = '<li class="poi-empty">Chargement…</li>';
     return fetchTab(key, lat, lon)
       .then(function (json) {
         var rows = parseForTab(key, json, lat, lon);
         tabLoaded[key] = true;
         renderListFor(key, rows);
+        persistTabRows(key, rows, lat, lon);
+        return { key: key, rows: rows };
       })
       .catch(function () {
         if (ul) {
@@ -390,6 +544,7 @@
             '<li class="poi-empty">Impossible de charger. Réessayez (réseau / Overpass).</li>';
         }
         showToast("Échec : " + key, true);
+        return { key: key, error: true };
       });
   }
 
@@ -468,6 +623,9 @@
     } else {
       el.sectionFrListen.classList.add("hidden");
     }
+    if (el.sectionFrPharmacy) {
+      el.sectionFrPharmacy.classList.toggle("hidden", countryCode !== "FR");
+    }
   }
 
   function reverseGeocode(lat, lon) {
@@ -519,6 +677,20 @@
     var lat = pos.coords.latitude;
     var lon = pos.coords.longitude;
 
+    if (!navigator.onLine) {
+      if (tryRestorePlacesFromCache(lat, lon, true)) {
+        if (el.coords) {
+          el.coords.classList.remove("hidden");
+          el.coords.querySelector("strong").textContent = formatPos(pos);
+        }
+      } else if (el.placesStatus) {
+        el.placesStatus.textContent =
+          "Hors ligne — activez le réseau pour charger les lieux, ou déplacez-vous puis réessayez après une session en ligne.";
+      }
+      if (el.placesCard) el.placesCard.classList.remove("hidden");
+      return;
+    }
+
     reverseGeocode(lat, lon)
       .then(function (data) {
         countryCode = data.countryCode || null;
@@ -555,6 +727,7 @@
       el.coords.querySelector("strong").textContent = formatPos(pos);
     }
     loadNearbyData(pos, false);
+    fetchWeather(pos.coords.latitude, pos.coords.longitude);
     if (el.btnGeo) {
       el.btnGeo.textContent = "Localisation active";
       el.btnGeo.disabled = false;
@@ -794,13 +967,17 @@
       });
     }
 
-    if (el.btnRefreshPlaces) {
-      el.btnRefreshPlaces.addEventListener("click", function () {
-        if (!lastPos) {
-          showToast("Activez d’abord la localisation.", true);
-          return;
-        }
-        nearbyLoaded = false;
+  if (el.btnRefreshPlaces) {
+    el.btnRefreshPlaces.addEventListener("click", function () {
+      if (!lastPos) {
+        showToast("Activez d’abord la localisation.", true);
+        return;
+      }
+      if (!navigator.onLine) {
+        showToast("Connexion requise pour actualiser les lieux.", true);
+        return;
+      }
+      nearbyLoaded = false;
         resetTabState();
         clearAllPlaceLists();
         if (el.placesStatus) el.placesStatus.textContent = "Actualisation en cours…";
@@ -817,6 +994,19 @@
         }
       });
     });
+
+    window.addEventListener("online", function () {
+      updateNetworkBanner();
+      showToast("Connexion rétablie.");
+    });
+    window.addEventListener("offline", function () {
+      updateNetworkBanner();
+    });
+    updateNetworkBanner();
+
+    if (!navigator.onLine) {
+      tryRestoreAnyCachedPlaces();
+    }
 
     renderEmergency();
     setActiveTab("h");
