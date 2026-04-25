@@ -47,8 +47,9 @@
     <section class="card" id="section-geo" aria-label="Géolocalisation">
       <h2>Autour de moi</h2>
       <p class="status" id="geo-status">
-        Activez la <strong>localisation</strong> pour détecter le pays, afficher les
-        numéros utiles et les hôpitaux cartographiés à proximité (OpenStreetMap).
+        Activez la <strong>localisation</strong> pour détecter le pays, les numéros
+        utiles et les lieux à proximité : hôpitaux, police / pompiers, pharmacies
+        (données OpenStreetMap).
       </p>
       <div class="geo-dots" aria-hidden="true" id="geo-dots">
         <span></span><span></span><span></span>
@@ -63,17 +64,59 @@
 
     <section
       class="card hidden"
-      id="section-hospitals"
-      aria-label="Hôpitaux à proximité"
+      id="section-places"
+      aria-label="Lieux à proximité"
     >
       <div class="card-head">
-        <h2>Hôpitaux à proximité</h2>
-        <button type="button" class="btn btn-ghost" id="btn-refresh-hospitals" title="Recharger la liste">
-          Actualiser
+        <h2>Lieux à proximité</h2>
+        <button type="button" class="btn btn-ghost" id="btn-refresh-places" title="Recharger toutes les listes">
+          Tout actualiser
         </button>
       </div>
-      <p class="status status--tight" id="hospitals-status"></p>
-      <ul class="poi-list poi-list--rich" id="hospitals-list"></ul>
+      <p class="status status--tight" id="places-status"></p>
+
+      <div class="tabs" role="tablist" aria-label="Catégories de lieux">
+        <button
+          type="button"
+          class="tabs__btn tabs__btn--active"
+          data-tab="h"
+          role="tab"
+          aria-selected="true"
+          id="tab-btn-h"
+        >
+          Hôpitaux
+        </button>
+        <button
+          type="button"
+          class="tabs__btn"
+          data-tab="pf"
+          role="tab"
+          aria-selected="false"
+          id="tab-btn-pf"
+        >
+          Police &amp; pompiers
+        </button>
+        <button
+          type="button"
+          class="tabs__btn"
+          data-tab="ph"
+          role="tab"
+          aria-selected="false"
+          id="tab-btn-ph"
+        >
+          Pharmacies
+        </button>
+      </div>
+
+      <div class="tabs__panel" data-tabpanel="h" role="tabpanel" aria-labelledby="tab-btn-h">
+        <ul class="poi-list poi-list--rich" id="hospitals-list"></ul>
+      </div>
+      <div class="tabs__panel hidden" data-tabpanel="pf" role="tabpanel" aria-labelledby="tab-btn-pf">
+        <ul class="poi-list poi-list--rich" id="police-fire-list"></ul>
+      </div>
+      <div class="tabs__panel hidden" data-tabpanel="ph" role="tabpanel" aria-labelledby="tab-btn-ph">
+        <ul class="poi-list poi-list--rich" id="pharmacies-list"></ul>
+      </div>
     </section>
 
     <p class="footer-note">
@@ -83,6 +126,7 @@
     </p>
 
     <script src="js/emergency-data.js" defer></script>
+    <script src="js/overpass.js" defer></script>
     <script src="js/app.js" defer></script>
   </body>
 </html>

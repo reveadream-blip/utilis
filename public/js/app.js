@@ -5,13 +5,17 @@
     geoStatus: document.getElementById("geo-status"),
     btnGeo: document.getElementById("btn-geo"),
     coords: document.getElementById("geo-coords"),
+    placesCard: document.getElementById("section-places"),
+    placesStatus: document.getElementById("places-status"),
+    btnRefreshPlaces: document.getElementById("btn-refresh-places"),
     hospitalsList: document.getElementById("hospitals-list"),
-    hospitalsCard: document.getElementById("section-hospitals"),
-    hospitalsStatus: document.getElementById("hospitals-status"),
-    btnRefreshHospitals: document.getElementById("btn-refresh-hospitals"),
+    policeFireList: document.getElementById("police-fire-list"),
+    pharmaciesList: document.getElementById("pharmacies-list"),
     urgenceButtons: document.getElementById("urgence-buttons"),
     urgenceHint: document.getElementById("urgence-hint"),
     urgenceCountry: document.getElementById("urgence-country"),
+    tabBtns: document.querySelectorAll("[data-tab]"),
+    tabPanels: document.querySelectorAll("[data-tabpanel]"),
   };
 
   var watchId = null;
@@ -115,34 +119,46 @@
     });
   }
 
-  function fetchHospitals(lat, lon) {
-    var q =
-      "[out:json][timeout:25];(" +
-      'node["amenity"="hospital"](around:18000,' +
-      lat +
-      "," +
-      lon +
-      ');' +
-      'way["amenity"="hospital"](around:18000,' +
-      lat +
-      "," +
-      lon +
-      ');' +
-      ");out center 24;";
-    return fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: "data=" + encodeURIComponent(q),
-    }).then(function (r) {
-      if (!r.ok) throw new Error("Carte des hôpitaux indisponible");
-      return r.json();
-    });
+  function mapsDirUrl(destLat, destLon) {
+    if (!lastPos) return "#";
+    return (
+      "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=" +
+      encodeURIComponent(
+        lastPos.coords.latitude + "," + lastPos.coords.longitude
+      ) +
+      "&destination=" +
+      encodeURIComponent(destLat + "," + destLon)
+    );
   }
 
-  function parseHospitalElements(json, lat, lon) {
-    var els = json.elements || [];
+  function defaultNameForAmenity(amenity) {
+    if (amenity === "hospital") return "Établissement hospitalier";
+    if (amenity === "police") return "Poste de police";
+    if (amenity === "fire_station") return "Caserne / poste de secours";
+    if (amenity === "pharmacy") return "Pharmacie";
+    return "Lieu";
+  }
+
+  function rowName(e) {
+    var t = e.tags || {};
+    return (
+      t.name ||
+      t["name:fr"] ||
+      t["operator"] ||
+      t["brand"] ||
+      defaultNameForAmenity(t.amenity)
+    );
+  }
+
+  function parseElements(json, lat, lon, allowedAmenities, maxRows) {
+    var allow = {};
+    allowedAmenities.forEach(function (a) {
+      allow[a] = 1;
+    });
     var rows = [];
-    els.forEach(function (e) {
+    (json.elements || []).forEach(function (e) {
+      var amenity = e.tags && e.tags.amenity;
+      if (!amenity || !allow[amenity]) return;
       var plat = e.lat;
       var plon = e.lon;
       if (e.type === "way" && e.center) {
@@ -150,11 +166,10 @@
         plon = e.center.lon;
       }
       if (plat == null || plon == null) return;
-      var name = (e.tags && e.tags.name) || "Établissement hospitalier";
-      var d = haversineKm(lat, lon, plat, plon);
       rows.push({
-        name: name,
-        km: d,
+        amenity: amenity,
+        name: rowName(e),
+        km: haversineKm(lat, lon, plat, plon),
         lat: plat,
         lon: plon,
       });
@@ -165,20 +180,25 @@
     var seen = {};
     var uniq = [];
     rows.forEach(function (r) {
-      var k = r.name + "|" + r.lat.toFixed(4) + "|" + r.lon.toFixed(4);
+      var k = r.amenity + "|" + r.name + "|" + r.lat.toFixed(4) + "|" + r.lon.toFixed(4);
       if (seen[k]) return;
       seen[k] = 1;
       uniq.push(r);
     });
-    return uniq.slice(0, 10);
+    return uniq.slice(0, maxRows);
   }
 
-  function renderHospitals(rows) {
-    if (!el.hospitalsList) return;
-    el.hospitalsList.innerHTML = "";
+  function formatKm(km) {
+    return km < 1 ? (km * 1000).toFixed(0) + " m" : km.toFixed(1) + " km";
+  }
+
+  function renderPoiList(ul, rows, options) {
+    if (!ul) return;
+    ul.innerHTML = "";
+    var emptyMsg = options.emptyMsg;
+    var showKind = options.showKind;
     if (!rows.length) {
-      el.hospitalsList.innerHTML =
-        '<li class="poi-empty">Aucun hôpital cartographié dans ~18 km (données OpenStreetMap).</li>';
+      ul.innerHTML = '<li class="poi-empty">' + emptyMsg + "</li>";
       return;
     }
     rows.forEach(function (r) {
@@ -186,33 +206,44 @@
       li.className = "poi-item";
       var left = document.createElement("div");
       left.className = "poi-item-main";
+      if (showKind) {
+        var badge = document.createElement("span");
+        badge.className =
+          "poi-badge poi-badge--" +
+          (r.amenity === "fire_station" ? "fire" : r.amenity === "police" ? "police" : "def");
+        badge.textContent =
+          r.amenity === "fire_station" ? "Pompiers" : r.amenity === "police" ? "Police" : r.amenity;
+        left.appendChild(badge);
+      }
       var title = document.createElement("strong");
       title.textContent = r.name;
       var sub = document.createElement("span");
       sub.className = "poi-km";
-      sub.textContent = "≈ " + (r.km < 1 ? (r.km * 1000).toFixed(0) + " m" : r.km.toFixed(1) + " km");
+      sub.textContent = "≈ " + formatKm(r.km);
       left.appendChild(title);
       left.appendChild(sub);
       var a = document.createElement("a");
       a.className = "poi-link";
-      a.href =
-        "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=" +
-        encodeURIComponent(
-          lastPos.coords.latitude + "," + lastPos.coords.longitude
-        ) +
-        "&destination=" +
-        encodeURIComponent(r.lat + "," + r.lon);
+      a.href = mapsDirUrl(r.lat, r.lon);
       a.target = "_blank";
       a.rel = "noopener noreferrer";
       a.textContent = "Itinéraire";
       li.appendChild(left);
       li.appendChild(a);
-      el.hospitalsList.appendChild(li);
+      ul.appendChild(li);
     });
   }
 
-  function loadNearbyData(pos) {
-    if (!pos || nearbyLoaded) return;
+  function runOverpass(q) {
+    if (!window.InfosOverpass) {
+      return Promise.reject(new Error("Overpass non chargé"));
+    }
+    return window.InfosOverpass.run(q);
+  }
+
+  function loadNearbyData(pos, force) {
+    if (!pos) return;
+    if (nearbyLoaded && !force) return;
     nearbyLoaded = true;
     var lat = pos.coords.latitude;
     var lon = pos.coords.longitude;
@@ -229,37 +260,131 @@
         renderEmergency();
       });
 
-    if (el.hospitalsStatus) el.hospitalsStatus.textContent = "Chargement des hôpitaux à proximité…";
-    if (el.hospitalsCard) el.hospitalsCard.classList.remove("hidden");
+    if (el.placesStatus) {
+      el.placesStatus.textContent =
+        "Chargement des lieux (hôpitaux, police / pompiers, pharmacies)…";
+    }
+    if (el.placesCard) el.placesCard.classList.remove("hidden");
 
-    fetchHospitals(lat, lon)
+    var qh =
+      "[out:json][timeout:28];(" +
+      'node["amenity"="hospital"](around:18000,' +
+      lat +
+      "," +
+      lon +
+      ');way["amenity"="hospital"](around:18000,' +
+      lat +
+      "," +
+      lon +
+      '););out center 26;';
+
+    var qpf =
+      "[out:json][timeout:28];(" +
+      'node["amenity"="police"](around:14000,' +
+      lat +
+      "," +
+      lon +
+      ');way["amenity"="police"](around:14000,' +
+      lat +
+      "," +
+      lon +
+      ');node["amenity"="fire_station"](around:14000,' +
+      lat +
+      "," +
+      lon +
+      ');way["amenity"="fire_station"](around:14000,' +
+      lat +
+      "," +
+      lon +
+      '););out center 32;';
+
+    var qph =
+      "[out:json][timeout:22];node[\"amenity\"=\"pharmacy\"](around:10000," +
+      lat +
+      "," +
+      lon +
+      ");out 28;";
+
+    var done = { h: false, pf: false, ph: false };
+    function checkAll() {
+      if (!done.h || !done.pf || !done.ph) return;
+      if (el.placesStatus) {
+        el.placesStatus.textContent =
+          "Données © contributeurs OpenStreetMap — à vérifier sur place.";
+      }
+    }
+
+    function failOne(which, msg) {
+      if (which === "h" && el.hospitalsList) {
+        el.hospitalsList.innerHTML =
+          '<li class="poi-empty">' + msg + "</li>";
+      }
+      if (which === "pf" && el.policeFireList) {
+        el.policeFireList.innerHTML = '<li class="poi-empty">' + msg + "</li>";
+      }
+      if (which === "ph" && el.pharmaciesList) {
+        el.pharmaciesList.innerHTML = '<li class="poi-empty">' + msg + "</li>";
+      }
+      done[which] = true;
+      checkAll();
+    }
+
+    runOverpass(qh)
       .then(function (json) {
-        var rows = parseHospitalElements(json, lat, lon);
-        renderHospitals(rows);
-        if (el.hospitalsStatus) {
-          el.hospitalsStatus.textContent =
-            "Données © contributeurs OpenStreetMap — vérifier sur place / auprès des services.";
-        }
+        var rows = parseElements(json, lat, lon, ["hospital"], 10);
+        renderPoiList(el.hospitalsList, rows, {
+          emptyMsg: "Aucun hôpital cartographié dans ~18 km.",
+          showKind: false,
+        });
+        done.h = true;
+        checkAll();
       })
       .catch(function () {
-        if (el.hospitalsStatus) {
-          el.hospitalsStatus.textContent =
-            "Impossible de charger les hôpitaux (réseau ou serveur Overpass). Réessayez plus tard.";
-        }
-        showToast("Échec du chargement des hôpitaux.", true);
+        failOne("h", "Impossible de charger les hôpitaux (réseau / Overpass).");
+        showToast("Échec : hôpitaux.", true);
+      });
+
+    runOverpass(qpf)
+      .then(function (json) {
+        var rows = parseElements(json, lat, lon, ["police", "fire_station"], 18);
+        renderPoiList(el.policeFireList, rows, {
+          emptyMsg: "Aucun poste police / pompiers cartographié dans ~14 km.",
+          showKind: true,
+        });
+        done.pf = true;
+        checkAll();
+      })
+      .catch(function () {
+        failOne("pf", "Impossible de charger police / pompiers.");
+        showToast("Échec : police / pompiers.", true);
+      });
+
+    runOverpass(qph)
+      .then(function (json) {
+        var rows = parseElements(json, lat, lon, ["pharmacy"], 14);
+        renderPoiList(el.pharmaciesList, rows, {
+          emptyMsg: "Aucune pharmacie cartographiée dans ~10 km.",
+          showKind: false,
+        });
+        done.ph = true;
+        checkAll();
+      })
+      .catch(function () {
+        failOne("ph", "Impossible de charger les pharmacies.");
+        showToast("Échec : pharmacies.", true);
       });
   }
 
   function onPos(pos) {
     lastPos = pos;
     setStatus(
-      "<strong>Position reçue.</strong> Numéros adaptés au pays (si détecté) et hôpitaux à proximité."
+      "<strong>Position reçue.</strong> Numéros du pays (si détecté) et lieux utiles à proximité."
     );
     if (el.coords) {
       el.coords.classList.remove("hidden");
       el.coords.querySelector("strong").textContent = formatPos(pos);
     }
-    loadNearbyData(pos);
+    loadNearbyData(pos, false);
     if (el.btnGeo) {
       el.btnGeo.textContent = "Localisation active";
       el.btnGeo.disabled = false;
@@ -282,8 +407,10 @@
     if (el.btnGeo) el.btnGeo.disabled = true;
     nearbyLoaded = false;
     if (el.hospitalsList) el.hospitalsList.innerHTML = "";
-    if (el.hospitalsCard) el.hospitalsCard.classList.add("hidden");
-    if (el.hospitalsStatus) el.hospitalsStatus.textContent = "";
+    if (el.policeFireList) el.policeFireList.innerHTML = "";
+    if (el.pharmaciesList) el.pharmaciesList.innerHTML = "";
+    if (el.placesCard) el.placesCard.classList.add("hidden");
+    if (el.placesStatus) el.placesStatus.textContent = "";
 
     watchId = navigator.geolocation.watchPosition(
       function (pos) {
@@ -302,6 +429,26 @@
     );
   }
 
+  function setActiveTab(tabId) {
+    el.tabBtns.forEach(function (btn) {
+      var id = btn.getAttribute("data-tab");
+      var active = id === tabId;
+      btn.classList.toggle("tabs__btn--active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    el.tabPanels.forEach(function (panel) {
+      var id = panel.getAttribute("data-tabpanel");
+      panel.classList.toggle("hidden", id !== tabId);
+    });
+  }
+
+  el.tabBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.getAttribute("data-tab");
+      if (id) setActiveTab(id);
+    });
+  });
+
   if (el.btnGeo) {
     el.btnGeo.addEventListener("click", function () {
       if (watchId !== null) {
@@ -313,22 +460,25 @@
     });
   }
 
-  if (el.btnRefreshHospitals) {
-    el.btnRefreshHospitals.addEventListener("click", function () {
+  if (el.btnRefreshPlaces) {
+    el.btnRefreshPlaces.addEventListener("click", function () {
       if (!lastPos) {
         showToast("Activez d’abord la localisation.", true);
         return;
       }
       nearbyLoaded = false;
       if (el.hospitalsList) el.hospitalsList.innerHTML = "";
-      if (el.hospitalsStatus) {
-        el.hospitalsStatus.textContent = "Actualisation des hôpitaux…";
+      if (el.policeFireList) el.policeFireList.innerHTML = "";
+      if (el.pharmaciesList) el.pharmaciesList.innerHTML = "";
+      if (el.placesStatus) {
+        el.placesStatus.textContent = "Actualisation des listes…";
       }
-      loadNearbyData(lastPos);
+      loadNearbyData(lastPos, true);
     });
   }
 
   renderEmergency();
+  setActiveTab("h");
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {

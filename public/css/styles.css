@@ -368,3 +368,67 @@ a:hover {
   text-align: center;
   list-style: none;
 }
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+}
+
+.tabs__btn {
+  appearance: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tabs__btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tabs__btn--active {
+  color: #fff;
+  background: rgba(45, 157, 120, 0.28);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.tabs__panel {
+  min-height: 3rem;
+}
+
+.poi-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.poi-badge--police {
+  background: rgba(100, 140, 200, 0.35);
+  color: #c5d8f5;
+}
+
+.poi-badge--fire {
+  background: rgba(201, 76, 76, 0.35);
+  color: #f0b0b0;
+}
+
+.poi-item-main .poi-badge + strong {
+  display: block;
+}
