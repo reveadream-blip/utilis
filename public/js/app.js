@@ -38,6 +38,9 @@
     el.urgenceHint = $("urgence-hint");
     el.urgenceCountry = $("urgence-country");
     el.btnCountryIp = $("btn-country-ip");
+    el.simCountryIso = $("sim-country-iso");
+    el.btnCountrySim = $("btn-country-sim");
+    el.btnCountrySimReset = $("btn-country-sim-reset");
     el.sectionFrListen = $("section-fr-listen");
     el.frListenGrid = $("fr-listen-grid");
     el.sectionFrPharmacy = $("section-fr-pharmacy");
@@ -832,7 +835,12 @@
     if (!el.urgenceButtons || !window.InfosEmergency) return;
     if (el.urgenceCountry) {
       if (countryName && countryCode) {
-        var src = countrySource === "ip" ? "IP/VPN" : "GPS";
+        var src =
+          countrySource === "ip"
+            ? "IP/VPN"
+            : countrySource === "sim"
+              ? "simulation"
+              : "GPS";
         el.urgenceCountry.textContent =
           countryName + " (" + countryCode + ") — source " + src + ".";
       } else if (lastPos && !countryCode) {
@@ -1024,6 +1032,71 @@
       });
   }
 
+  function detectCountryCenterByIso(iso) {
+    return fetch("https://restcountries.com/v3.1/alpha/" + encodeURIComponent(iso), {
+      method: "GET",
+      cache: "no-store",
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("Pays inconnu");
+        return r.json();
+      })
+      .then(function (arr) {
+        var row = Array.isArray(arr) ? arr[0] : arr;
+        if (!row || !row.latlng || row.latlng.length < 2) {
+          throw new Error("Centre pays indisponible");
+        }
+        return {
+          lat: Number(row.latlng[0]),
+          lon: Number(row.latlng[1]),
+          code: (row.cca2 || iso || "").toUpperCase(),
+          name:
+            (row.translations &&
+              row.translations.fra &&
+              row.translations.fra.common) ||
+            (row.name && row.name.common) ||
+            iso,
+        };
+      });
+  }
+
+  function useSimulatedCountryMode() {
+    var iso = el.simCountryIso ? String(el.simCountryIso.value || "").trim().toUpperCase() : "";
+    if (!/^[A-Z]{2}$/.test(iso)) {
+      showToast("Entrez un code pays ISO-2 valide (ex: CH, FR, US).", true);
+      return;
+    }
+    countryResolveMode = "sim";
+    detectCountryCenterByIso(iso)
+      .then(function (p) {
+        countryCode = p.code;
+        countryName = p.name;
+        countrySource = "sim";
+        lastPos = { coords: { latitude: p.lat, longitude: p.lon } };
+        clearFallbackMode();
+        if (el.coords) {
+          el.coords.classList.remove("hidden");
+          el.coords.querySelector("strong").textContent = formatPos(lastPos);
+        }
+        nearbyLoaded = false;
+        resetTabState();
+        clearAllPlaceLists();
+        renderEmergency();
+        loadNearbyData(lastPos, true);
+        showToast("Simulation active : " + p.name + " (" + p.code + ").");
+      })
+      .catch(function () {
+        showToast("Impossible de simuler ce pays. Vérifiez le code ISO.", true);
+      });
+  }
+
+  function resetSimulatedCountryMode() {
+    countryResolveMode = "geo";
+    countrySource = null;
+    showToast("Retour au mode GPS.");
+    startGeolocation();
+  }
+
   function resetTabState() {
     TAB_ORDER.forEach(function (k) {
       tabLoaded[k] = false;
@@ -1075,7 +1148,7 @@
 
     reverseGeocode(lat, lon)
       .then(function (data) {
-        if (countryResolveMode === "ip") return;
+        if (countryResolveMode !== "geo") return;
         countryCode = data.countryCode || null;
         countryName = data.countryName || data.principalSubdivision || null;
         countrySource = countryCode ? "geo" : null;
@@ -1524,6 +1597,12 @@
     }
     if (el.btnCountryIp) {
       el.btnCountryIp.addEventListener("click", useIpCountryMode);
+    }
+    if (el.btnCountrySim) {
+      el.btnCountrySim.addEventListener("click", useSimulatedCountryMode);
+    }
+    if (el.btnCountrySimReset) {
+      el.btnCountrySimReset.addEventListener("click", resetSimulatedCountryMode);
     }
 
   if (el.btnRefreshPlaces) {

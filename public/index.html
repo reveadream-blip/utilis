@@ -114,6 +114,18 @@
           Utiliser pays réseau (VPN/IP)
         </button>
       </div>
+      <div class="sim-country-row">
+        <label class="form-field sim-country-field" for="sim-country-iso">
+          Test pays (ISO-2)
+          <input id="sim-country-iso" type="text" maxlength="2" placeholder="CH" />
+        </label>
+        <button type="button" class="btn btn-ghost" id="btn-country-sim">
+          Simuler
+        </button>
+        <button type="button" class="btn btn-ghost" id="btn-country-sim-reset">
+          Retour GPS
+        </button>
+      </div>
       <div id="urgence-buttons" class="urgence-grid" role="group" aria-label="Numéros d’urgence"></div>
       <p class="status urg-hint hidden" id="urgence-hint"></p>
       <p class="legal-note">

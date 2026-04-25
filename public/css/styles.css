@@ -834,6 +834,23 @@ a:hover {
   font-weight: 700;
 }
 
+.sim-country-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 4px;
+  align-items: flex-end;
+}
+
+.sim-country-field {
+  flex: 1;
+  min-width: 110px;
+}
+
+.sim-country-field input {
+  text-transform: uppercase;
+}
+
 .weather-strip {
   margin: 8px 0 0;
   font-size: 0.82rem;
