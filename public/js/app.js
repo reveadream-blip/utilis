@@ -4,6 +4,7 @@
   var STORAGE_PROFILE = "infos_indispensables_profile_v1";
   var STORAGE_SHORTCUTS = "infos_indispensables_shortcuts_v1";
   var STORAGE_PLACES_CACHE = "infos_indispensables_places_cache_v1";
+  var STORAGE_FAVORITES = "infos_indispensables_favorites_v1";
   var CACHE_MAX_KM = 45;
 
   var el = {};
@@ -36,12 +37,14 @@
     el.frListenGrid = $("fr-listen-grid");
     el.sectionFrPharmacy = $("section-fr-pharmacy");
     el.networkBanner = $("network-banner");
+    el.fallbackBanner = $("fallback-banner");
     el.weatherStrip = $("weather-strip");
     el.tabBtns = document.querySelectorAll("[data-tab]");
     el.tabPanels = document.querySelectorAll("[data-tabpanel]");
     el.formProfile = $("form-profile");
     el.btnSaveProfile = $("btn-save-profile");
     el.btnCopyProfile = $("btn-copy-profile");
+    el.btnExportProfile = $("btn-export-profile");
     el.shortcutsList = $("shortcuts-list");
     el.btnAddShortcut = $("btn-add-shortcut");
     el.emergencyMode = $("emergency-mode");
@@ -52,6 +55,8 @@
     el.sosTelWarn = $("sos-tel-warn");
     el.btnEmergencyShare = $("btn-emergency-share");
     el.btnEmergencyFiche = $("btn-emergency-fiche");
+    el.favoritesBox = $("favorites-box");
+    el.favoritesList = $("favorites-list");
   }
 
   var emergencyFocusBack = null;
@@ -259,6 +264,102 @@
       el.networkBanner.textContent =
         "Hors ligne — listes possibles depuis le cache (non à jour). Connexion requise pour actualiser.";
     }
+  }
+
+  function activateFallbackMode(reason) {
+    countryCode = null;
+    countryName = null;
+    renderEmergency();
+    refreshSosOverlay();
+    if (!el.fallbackBanner) return;
+    el.fallbackBanner.classList.remove("hidden");
+    el.fallbackBanner.textContent =
+      reason ||
+      "Mode de secours activé : numéros génériques affichés (112 en priorité selon zone). Activez la localisation pour adapter au pays.";
+  }
+
+  function clearFallbackMode() {
+    if (!el.fallbackBanner) return;
+    el.fallbackBanner.classList.add("hidden");
+    el.fallbackBanner.textContent = "";
+  }
+
+  function getFavorites() {
+    try {
+      var raw = localStorage.getItem(STORAGE_FAVORITES);
+      if (!raw) return [];
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveFavorites(arr) {
+    try {
+      localStorage.setItem(STORAGE_FAVORITES, JSON.stringify(arr.slice(0, 40)));
+    } catch (e) {
+      showToast("Sauvegarde des favoris impossible.", true);
+    }
+  }
+
+  function favoriteId(r) {
+    return (
+      String(r.name || "Lieu") +
+      "|" +
+      Number(r.lat || 0).toFixed(5) +
+      "|" +
+      Number(r.lon || 0).toFixed(5)
+    );
+  }
+
+  function isFavorite(r) {
+    var id = favoriteId(r);
+    return getFavorites().some(function (f) {
+      return f.id === id;
+    });
+  }
+
+  function toggleFavorite(row) {
+    var list = getFavorites();
+    var id = favoriteId(row);
+    var i = list.findIndex(function (f) {
+      return f.id === id;
+    });
+    if (i >= 0) {
+      list.splice(i, 1);
+      showToast("Favori retiré.");
+    } else {
+      list.unshift({
+        id: id,
+        name: row.name || "Lieu",
+        km: row.km || 0,
+        lat: row.lat,
+        lon: row.lon,
+        variant: row.variant || row.kind || "default",
+      });
+      showToast("Lieu ajouté aux favoris.");
+    }
+    saveFavorites(list);
+    renderFavorites();
+  }
+
+  function renderFavorites() {
+    if (!el.favoritesBox || !el.favoritesList) return;
+    var list = getFavorites();
+    if (!list.length) {
+      el.favoritesBox.classList.add("hidden");
+      el.favoritesList.innerHTML = "";
+      return;
+    }
+    el.favoritesBox.classList.remove("hidden");
+    renderPoiList(
+      el.favoritesList,
+      list,
+      "Aucun favori.",
+      "default",
+      true
+    );
   }
 
   function readPlacesCache() {
@@ -546,7 +647,7 @@
     return km < 1 ? (km * 1000).toFixed(0) + " m" : km.toFixed(1) + " km";
   }
 
-  function renderPoiList(ul, rows, emptyMsg, variant) {
+  function renderPoiList(ul, rows, emptyMsg, variant, skipFav) {
     if (!ul) return;
     ul.innerHTML = "";
     if (!rows || !rows.length) {
@@ -588,8 +689,25 @@
       a.target = "_blank";
       a.rel = "noopener noreferrer";
       a.textContent = "Itinéraire";
+      var actions = document.createElement("div");
+      actions.className = "poi-actions";
+      actions.appendChild(a);
+      if (!skipFav) {
+        var fav = document.createElement("button");
+        fav.type = "button";
+        var activeFav = isFavorite(r);
+        fav.className = "btn-fav" + (activeFav ? " btn-fav--active" : "");
+        fav.textContent = activeFav ? "★" : "☆";
+        fav.title = activeFav ? "Retirer des favoris" : "Ajouter aux favoris";
+        fav.setAttribute("aria-label", fav.title);
+        fav.addEventListener("click", function () {
+          toggleFavorite(r);
+          renderListFor(activeTabId, rows);
+        });
+        actions.appendChild(fav);
+      }
       li.appendChild(left);
-      li.appendChild(a);
+      li.appendChild(actions);
       ul.appendChild(li);
     });
   }
@@ -839,12 +957,11 @@
       .then(function (data) {
         countryCode = data.countryCode || null;
         countryName = data.countryName || data.principalSubdivision || null;
+        clearFallbackMode();
         renderEmergency();
       })
       .catch(function () {
-        countryCode = null;
-        countryName = null;
-        renderEmergency();
+        activateFallbackMode("Pays non détecté : mode de secours activé avec numéros génériques.");
       });
 
     if (el.placesStatus) {
@@ -863,6 +980,7 @@
 
   function onPos(pos) {
     lastPos = pos;
+    clearFallbackMode();
     setStatus(
       "<strong>Position reçue.</strong> Urgence, fiche perso, raccourcis + lieux à proximité."
     );
@@ -881,6 +999,9 @@
   function onErr(err) {
     setStatus(
       "<strong>Impossible d’obtenir la position.</strong> Vérifiez le GPS et les autorisations."
+    );
+    activateFallbackMode(
+      "Mode de secours activé : localisation indisponible, numéros génériques affichés immédiatement."
     );
     showToast(err.message || "Erreur de géolocalisation", true);
   }
@@ -1005,6 +1126,42 @@
     }
   }
 
+  function exportProfilePdf() {
+    try {
+      var s = localStorage.getItem(STORAGE_PROFILE);
+      var o = s ? JSON.parse(s) : {};
+      var html =
+        "<!doctype html><html><head><meta charset='utf-8'><title>Fiche urgence</title>" +
+        "<style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin:0 0 12px}p{margin:6px 0}strong{display:inline-block;min-width:180px}</style>" +
+        "</head><body>" +
+        "<h1>Fiche urgence - Infos Indispensables</h1>" +
+        "<p><strong>Identité :</strong> " + (o.name || "-") + "</p>" +
+        "<p><strong>Groupe sanguin :</strong> " + (o.blood || "-") + "</p>" +
+        "<p><strong>Allergies :</strong> " + (o.allergies || "-") + "</p>" +
+        "<p><strong>Traitements :</strong> " + (o.meds || "-") + "</p>" +
+        "<p><strong>Contact urgence :</strong> " + (o.contact || "-") + " " + (o.contactPhone || "") + "</p>" +
+        "<p><strong>Notes :</strong> " + (o.notes || "-") + "</p>" +
+        "<p style='margin-top:18px;font-size:12px;color:#666'>Document local genere le " +
+        new Date().toLocaleString("fr-FR") +
+        "</p>" +
+        "</body></html>";
+      var w = window.open("", "_blank", "noopener,noreferrer");
+      if (!w) {
+        showToast("Popup bloquee : autorisez les fenetres pour exporter le PDF.", true);
+        return;
+      }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(function () {
+        w.print();
+      }, 250);
+    } catch (e) {
+      showToast("Export PDF impossible.", true);
+    }
+  }
+
   function getShortcuts() {
     try {
       var s = localStorage.getItem(STORAGE_SHORTCUTS);
@@ -1077,6 +1234,7 @@
     initEls();
     loadProfile();
     renderShortcuts();
+    renderFavorites();
 
     if (el.btnSaveProfile) {
       el.btnSaveProfile.addEventListener("click", function (e) {
@@ -1087,6 +1245,11 @@
     if (el.btnCopyProfile) {
       el.btnCopyProfile.addEventListener("click", function () {
         copyProfileSummary();
+      });
+    }
+    if (el.btnExportProfile) {
+      el.btnExportProfile.addEventListener("click", function () {
+        exportProfilePdf();
       });
     }
     if (el.btnAddShortcut) {
@@ -1171,6 +1334,9 @@
     updateNetworkBanner();
 
     if (!navigator.onLine) {
+      activateFallbackMode(
+        "Mode de secours activé : vous etes hors ligne, numéros d'urgence génériques disponibles."
+      );
       tryRestoreAnyCachedPlaces();
     }
 

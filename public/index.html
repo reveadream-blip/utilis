@@ -44,6 +44,7 @@
     </header>
 
     <p id="network-banner" class="network-banner hidden" role="status" aria-live="polite"></p>
+    <p id="fallback-banner" class="fallback-mode hidden" role="status" aria-live="polite"></p>
 
     <button
       type="button"
@@ -166,6 +167,10 @@
         </button>
       </div>
       <p class="status status--tight" id="places-status"></p>
+      <div class="favorites-box hidden" id="favorites-box">
+        <p class="favorites-title">Favoris enregistrés</p>
+        <ul class="poi-list poi-list--rich" id="favorites-list"></ul>
+      </div>
 
       <div class="tabs tabs--scroll" role="tablist" aria-label="Types de lieux">
         <button type="button" class="tabs__btn tabs__btn--active" data-tab="h" role="tab" aria-selected="true" id="tab-btn-h">Hôpitaux</button>
@@ -241,6 +246,7 @@
         <div class="form-actions">
           <button type="button" class="btn btn-primary" id="btn-save-profile">Enregistrer</button>
           <button type="button" class="btn btn-ghost" id="btn-copy-profile">Copier le résumé</button>
+          <button type="button" class="btn btn-ghost" id="btn-export-profile">Exporter en PDF</button>
         </div>
       </form>
     </section>
