@@ -1699,9 +1699,26 @@
     }
   }
 
+  function normalizeShortcut(item) {
+    if (!item || typeof item !== "object") return null;
+    var label = String(item.label || "").trim();
+    var type = item.type === "tel" ? "tel" : "web";
+    var value = type === "tel" ? String(item.phone || item.url || "").trim() : String(item.url || "").trim();
+    if (!value) return null;
+    return type === "tel"
+      ? { type: "tel", label: label || value, phone: value }
+      : { type: "web", label: label || value, url: value };
+  }
+
   function saveShortcuts(arr) {
     try {
-      localStorage.setItem(STORAGE_SHORTCUTS, JSON.stringify(arr.slice(0, 20)));
+      var cleaned = (arr || [])
+        .map(normalizeShortcut)
+        .filter(function (x) {
+          return !!x;
+        })
+        .slice(0, 20);
+      localStorage.setItem(STORAGE_SHORTCUTS, JSON.stringify(cleaned));
     } catch (e) {
       showToast("Sauvegarde des raccourcis impossible.", true);
     }
@@ -1720,11 +1737,20 @@
       var li = document.createElement("li");
       li.className = "shortcut-row";
       var a = document.createElement("a");
-      a.href = item.url;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      a.className = "shortcut-link";
-      a.textContent = item.label || item.url;
+      var type = item.type === "tel" ? "tel" : "web";
+      if (type === "tel") {
+        var phone = String(item.phone || "").trim();
+        var digits = phone.replace(/[^\d+]/g, "");
+        a.href = "tel:" + digits;
+        a.className = "shortcut-link shortcut-link--tel";
+        a.textContent = (item.label || "Appel") + " • " + phone;
+      } else {
+        a.href = item.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.className = "shortcut-link";
+        a.textContent = item.label || item.url;
+      }
       var del = document.createElement("button");
       del.type = "button";
       del.className = "btn btn-mini";
@@ -1745,13 +1771,29 @@
   function addShortcut() {
     var label = (prompt("Nom du raccourci (ex. : Intranet, Messagerie) :", "") || "").trim();
     if (!label) return;
-    var url = (prompt("Adresse (https://...)", "https://") || "").trim();
-    if (!url || !/^https?:\/\//i.test(url)) {
-      showToast("URL invalide (commencez par http).", true);
-      return;
+    var typeInput = (prompt("Type de raccourci : web ou tel ?", "web") || "")
+      .trim()
+      .toLowerCase();
+    var isTel = typeInput === "tel" || typeInput === "t" || typeInput === "phone";
+    var item = null;
+    if (isTel) {
+      var phone = (prompt("Numéro à appeler (ex. +33612345678)", "+33") || "").trim();
+      var digits = phone.replace(/[^\d+]/g, "");
+      if (!digits || !/^\+?\d{6,16}$/.test(digits)) {
+        showToast("Numéro invalide.", true);
+        return;
+      }
+      item = { type: "tel", label: label, phone: digits };
+    } else {
+      var url = (prompt("Adresse (https://...)", "https://") || "").trim();
+      if (!url || !/^https?:\/\//i.test(url)) {
+        showToast("URL invalide (commencez par http).", true);
+        return;
+      }
+      item = { type: "web", label: label, url: url };
     }
     var list = getShortcuts();
-    list.push({ label: label, url: url });
+    list.push(item);
     saveShortcuts(list);
     renderShortcuts();
   }

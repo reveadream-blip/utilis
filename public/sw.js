@@ -1,5 +1,5 @@
 /* Service Worker — cache des ressources pour usage hors connexion basique */
-const VERSION = "infos-indispensables-v23";
+const VERSION = "infos-indispensables-v24";
 const CORE = [
   "./",
   "./index.html",
