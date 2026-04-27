@@ -1,5 +1,5 @@
 /* Service Worker — cache des ressources pour usage hors connexion basique */
-const VERSION = "infos-indispensables-v25";
+const VERSION = "infos-indispensables-v27";
 const CORE = [
   "./",
   "./index.html",
@@ -9,8 +9,8 @@ const CORE = [
   "./js/overpass.js",
   "./js/app.js",
   "./manifest.webmanifest",
-  "./icons/icon-192.svg",
-  "./icons/icon-maskable.svg",
+  "./icons/icon-192.png",
+  "./icons/icon-maskable.png",
 ];
 
 self.addEventListener("install", (event) => {

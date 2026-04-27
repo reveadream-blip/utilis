@@ -162,7 +162,7 @@
       var lon = pos.coords.longitude;
       var mapsUrl = "https://www.google.com/maps?q=" + lat + "," + lon;
       var text =
-        "My location (SOS Emergency)\n" +
+        "My location (SOS International Emergency)\n" +
         lat.toFixed(5) +
         ", " +
         lon.toFixed(5) +
@@ -272,7 +272,11 @@
     if (t.length < 2) return false;
     if (/^\d+([.,]\d+)?$/.test(t)) return false;
     if (/^(SOS|PWA|CH|FR|US)$/i.test(t)) return false;
-    return /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(t);
+    // Latin letters (French/English/etc.)
+    if (/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(t)) return true;
+    // Arabic script — needs translation when UI targets another language
+    if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(t)) return true;
+    return false;
   }
 
   function translateText(text, targetLang, cache) {
@@ -304,6 +308,12 @@
   function applyAutoI18n() {
     var targetLang = detectPreferredLanguage();
     document.documentElement.lang = targetLang;
+    var rtl =
+      targetLang === "ar" ||
+      targetLang === "he" ||
+      targetLang === "fa" ||
+      targetLang === "ur";
+    document.documentElement.dir = rtl ? "rtl" : "ltr";
     if (!targetLang || targetLang === SOURCE_LANG) return;
 
     var cache = readTranslationCache();
@@ -1576,7 +1586,7 @@
       var data = getProfilesData();
       var o = data.profiles[activeProfileSlot] || {};
       var lines = [
-        "— Emergency profile (SOS Emergency) —",
+        "— Emergency profile (SOS International Emergency) —",
         "Profil: " + profileSlotLabel(activeProfileSlot),
         "Identité: " + (o.name || "—"),
         "Groupe sanguin: " + (o.blood || "—"),
@@ -1611,7 +1621,7 @@
         "<!doctype html><html><head><meta charset='utf-8'><title>Fiche urgence</title>" +
         "<style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin:0 0 12px}p{margin:6px 0}strong{display:inline-block;min-width:180px}</style>" +
         "</head><body>" +
-        "<h1>Emergency profile - SOS Emergency</h1>" +
+        "<h1>Emergency profile - SOS International Emergency</h1>" +
         "<p><strong>Profil :</strong> " + profileSlotLabel(activeProfileSlot) + "</p>" +
         "<p><strong>Identité :</strong> " + (o.name || "-") + "</p>" +
         "<p><strong>Groupe sanguin :</strong> " + (o.blood || "-") + "</p>" +

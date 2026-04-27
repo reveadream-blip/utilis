@@ -190,6 +190,15 @@
         { num: "999", label: "Ambulance" },
       ],
     },
+    OM: {
+      countryLabel: "Oman",
+      lines: [
+        { num: "9999", label: "Police — urgences (ROP)" },
+        { num: "112", label: "112 (secours internationaux / renvoi possible)" },
+      ],
+      hint:
+        "9999 est le numéro d’urgence principal au Sultanat d’Oman (Police royale). En cas de doute, vérifiez sur une source officielle récente (ex. gouvernement, ROP).",
+    },
     IE: {
       countryLabel: "Irlande",
       lines: [
